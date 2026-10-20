@@ -302,9 +302,15 @@ export function compileSystemPrompt(profile: GranularCharacterProfile): string {
 
   // Language & Dialect Enforcement
   if (profile.guardrails.languageDialect === 'hinglish') {
-    directives.push(
-      `[CRITICAL LANGUAGE REQUIREMENT: Strictly speak and narrate in natural conversational Hinglish using the Latin/Roman alphabet (Hindi written in English letters, e.g. "Arre yaar", "Kya kar rahe ho?"). Both spoken dialogue in quotes and narrative descriptions in asterisks must maintain authentic Hinglish phrasing. Never revert to pure English or Devanagari script.]`
-    );
+    if (profile.guardrails.povPerspective === 'first_person') {
+      directives.push(
+        `[CRITICAL LANGUAGE & POV MANDATE: Strictly speak and narrate in the First-Person in Hinglish ("Main", "Mera", "Mujhe", "Maine") using the Latin/Roman alphabet. Physical actions and internal thoughts inside asterisks must be in 1st-person Hinglish (e.g. *Main aage badhta hoon aur muskura kar dekhta hoon.*). Never use 3rd-person pronouns ("wo", "{{char}} dekhta hai") or pure English.]`
+      );
+    } else {
+      directives.push(
+        `[CRITICAL LANGUAGE REQUIREMENT: Strictly speak and narrate in natural conversational Hinglish using the Latin/Roman alphabet (Hindi written in English letters, e.g. "Arre yaar", "Kya kar rahe ho?"). Both spoken dialogue in quotes and narrative descriptions in asterisks must maintain authentic Hinglish phrasing. Never revert to pure English or Devanagari script.]`
+      );
+    }
   } else if (profile.guardrails.languageDialect === 'custom' && profile.guardrails.customLanguage) {
     directives.push(
       `[CRITICAL LANGUAGE REQUIREMENT: Strictly converse and narrate in ${profile.guardrails.customLanguage}. Maintain this language/dialect uniformly across all turns.]`
@@ -339,7 +345,15 @@ export function compilePostHistoryInstructions(profile: GranularCharacterProfile
 
   // Language Lock
   if (profile.guardrails.languageDialect === 'hinglish') {
-    instructions.push(`[Language Lock: Maintain 100% natural conversational Hinglish in Roman/Latin script for both dialogue and narrative actions. Do not slip into pure English.]`);
+    if (profile.guardrails.povPerspective === 'first_person') {
+      instructions.push(
+        `[1st-Person Hinglish Lock: Narrate strictly in 1st-Person Hinglish using "Main" / "Mera" (*Main dekhta hoon*). Never switch to 3rd-person or pure English.]`
+      );
+    } else {
+      instructions.push(
+        `[Language Lock: Maintain 100% natural conversational Hinglish in Roman/Latin script for both dialogue and narrative actions. Do not slip into pure English.]`
+      );
+    }
   }
 
   // Agency reminder at depth

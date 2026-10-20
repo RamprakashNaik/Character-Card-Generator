@@ -139,23 +139,57 @@ JSON SCHEMA:
 /**
  * Detects if the user or profile requires Hinglish / Romanized Hindi and provides strict instructions
  */
-export function buildLanguageDirectives(text: string, currentDialect?: string): string {
+export function buildLanguageDirectives(params: {
+  text?: string;
+  currentDialect?: string;
+  povPerspective?: 'first_person' | 'third_person';
+  gender?: string;
+}): string {
+  const combinedText = params.text || '';
   const isHinglish =
-    /\b(hinglish|hindi|urdu)\b/i.test(text) || currentDialect === 'hinglish';
+    /\b(hinglish|hindi|urdu)\b/i.test(combinedText) || params.currentDialect === 'hinglish';
 
-  if (isHinglish) {
-    return `
-*** CRITICAL MANDATORY LANGUAGE PROTOCOL: HINGLISH IN ROMAN SCRIPT (NO ENGLISH REGRESSION) ***
-The user requires HINGLISH (conversational Hindi written in the Roman/Latin English alphabet):
-1. DIALOGUE IN QUOTES: All spoken dialogue inside double quotes ("...") MUST be in 100% natural, modern conversational Hinglish (e.g. "Arre yaar, tu abhi tak yahan hai? Maine tujhe bola tha na sab theek ho jayega.").
-2. NARRATION & ACTIONS IN ASTERISKS: When storytelling, narrative prose, or dialogue actions are requested in Hinglish, the descriptive actions inside asterisks (*...*) must also maintain natural Hinglish storytelling flow (e.g. *Dheere se piche mud kar dekhta hai aur thodi si muskaan ke saath aage badhta hai.*) rather than defaulting back to formal Oxford English.
-3. ABSOLUTELY ZERO ENGLISH REGRESSION: Do not start with one sentence in Hinglish and then switch the remaining paragraphs or dialogue turns to pure English. The entire section must consistently maintain authentic Hinglish.
-4. SCRIPT ENFORCEMENT: Strictly use the standard English/Latin alphabet for Hindi words (Romanized Hinglish). NEVER output Devanagari script (no हिन्दी letters) unless explicitly asked.
-5. NATURAL SLANG: Use authentic modern conversational vocabulary ('yaar', 'arre', 'kya scene hai', 'samjhe na', 'bilkul', 'tension mat le').
+  if (!isHinglish) return '';
+
+  const wantsFirstPerson =
+    params.povPerspective === 'first_person' ||
+    /\b(1st person|first person|first-person|1st-person|main|mera|mujhe|as me|in 1st)\b/i.test(combinedText);
+
+  const isFemale = /\b(female|woman|girl|she|her)\b/i.test(params.gender || '');
+
+  let povSection = '';
+  if (wantsFirstPerson) {
+    povSection = `
+FIRST-PERSON PERSPECTIVE ("MAIN / MERA / MUJHE / MAINE") MANDATE:
+- The character MUST write and narrate in the FIRST-PERSON ("Main", "Mera", "Mujhe", "Maine").
+- NEVER use third-person words like "Wo dekhta hai", "Usne kaha", "{{char}} dekhti hai", or English "He/She looks".
+- Physical actions and thoughts inside asterisks (*...*) MUST use 1st-person Hinglish:
+  ${isFemale
+    ? 'Example (Female 1st Person): *Main thoda aage badhti hoon aur ek gehri saans lekar seedha {{user}} ki taraf dekhti hoon.* "Arre yaar, mujhe laga tum nahi aaoge..."'
+    : 'Example (Male 1st Person): *Main thoda aage badhta hoon aur ek gehri saans lekar seedha {{user}} ki taraf dekhta hoon.* "Arre yaar, mujhe laga tum nahi aaoge..."'}
+- Correct verb endings:
+  ${isFemale
+    ? 'Use female 1st-person verbs: "karti hoon", "sochti hoon", "dekh rahi hoon", "maine socha", "mera mann tha".'
+    : 'Use male 1st-person verbs: "karta hoon", "sochta hoon", "dekh raha hoon", "maine socha", "mera mann tha".'}
+`;
+  } else {
+    povSection = `
+THIRD-PERSON PERSPECTIVE ("{{char}} / WO / USNE") MANDATE:
+- Descriptive actions inside asterisks (*...*) use third-person:
+  Example: *{{char}} thoda piche mud kar ${isFemale ? 'dekhti hai' : 'dekhta hai'} aur muskurate hue aage ${isFemale ? 'badhti hai' : 'badhta hai'}.*
 `;
   }
 
-  return '';
+  return `
+*** CRITICAL MANDATORY LANGUAGE PROTOCOL: HINGLISH IN ROMAN SCRIPT (NO ENGLISH REGRESSION) ***
+The user requires HINGLISH (conversational Hindi written in the Roman/Latin English alphabet):
+1. DIALOGUE IN QUOTES: All spoken dialogue inside double quotes ("...") MUST be in 100% natural, modern conversational Hinglish (e.g. "Arre yaar, tu abhi tak yahan hai? Maine tujhe bola tha na sab theek ho jayega.").
+2. NARRATION & ACTIONS IN ASTERISKS: Descriptive actions (*...*) must ALSO be written in natural Hinglish storytelling flow rather than defaulting to formal Oxford English.
+${povSection}
+3. ABSOLUTELY ZERO ENGLISH REGRESSION: Do not start with one sentence in Hinglish and switch the remaining paragraphs or dialogue turns to pure English. The entire section must consistently maintain authentic Hinglish.
+4. SCRIPT ENFORCEMENT: Strictly use the standard English/Latin alphabet for Hindi words (Romanized Hinglish). NEVER output Devanagari script (no हिन्दी letters) unless explicitly asked.
+5. NATURAL SLANG: Use authentic modern conversational vocabulary ('yaar', 'arre', 'kya scene hai', 'samjhe na', 'bilkul', 'tension mat le').
+`;
 }
 
 export function buildSectionRefinePrompt(params: {
@@ -165,8 +199,15 @@ export function buildSectionRefinePrompt(params: {
   currentContent: string;
   userInstruction: string;
   languageDialect?: string;
+  povPerspective?: 'first_person' | 'third_person';
+  gender?: string;
 }): string {
-  const langRule = buildLanguageDirectives(params.userInstruction, params.languageDialect);
+  const langRule = buildLanguageDirectives({
+    text: params.userInstruction,
+    currentDialect: params.languageDialect,
+    povPerspective: params.povPerspective,
+    gender: params.gender,
+  });
   return `You are refining a specific section of the SillyTavern character card for:
 CHARACTER: ${params.characterName} (${params.characterArchetype})
 SECTION: ${params.sectionTitle}
@@ -209,9 +250,16 @@ export function buildHarmonizeDialoguesPrompt(profile: GranularCharacterProfile)
     conversational: 'Fast-paced, dialogue-focused exchange with witty banter and concise physical gestures.',
   }[profile.guardrails.narrationStyle] || 'Atmospheric literary prose';
 
-  const povDesc = profile.guardrails.povPerspective === 'first_person'
-    ? 'First-person perspective as {{char}} ("I", "my")'
-    : 'Third-person perspective ("{{char}}", "he/she/they")';
+  const isHinglish = profile.guardrails.languageDialect === 'hinglish';
+  const isFirstPerson = profile.guardrails.povPerspective === 'first_person';
+
+  const povDesc = isFirstPerson
+    ? isHinglish
+      ? 'First-person perspective in Hinglish ("Main", "Mera", "Mujhe", "Maine", e.g. *Main thoda aage badhta hoon aur muskurata hoon.*)'
+      : 'First-person perspective as {{char}} ("I", "my")'
+    : isHinglish
+      ? 'Third-person perspective in Hinglish ("{{char}}", "Wo", "Usne", e.g. *{{char}} thoda aage badhta hai.*)'
+      : 'Third-person perspective ("{{char}}", "he/she/they");';
 
   return `You are an elite narrative voice director.
 Re-write the opening First Message and Example Dialogues for this character to strictly match the requested Narration Style and Story Direction.
@@ -223,7 +271,12 @@ CURRENT SCENARIO: ${profile.scenario.environmentAndContext}
 TARGET NARRATION STYLE: ${narrationDesc}
 PERSPECTIVE: ${povDesc}
 STORY DIRECTION & GOAL: ${profile.guardrails.storyGoalAndDirection || 'Maintain engaging roleplay tension and distinct character voice.'}
-${buildLanguageDirectives(profile.guardrails.storyGoalAndDirection || '', profile.guardrails.languageDialect)}
+${buildLanguageDirectives({
+  text: profile.guardrails.storyGoalAndDirection || '',
+  currentDialect: profile.guardrails.languageDialect,
+  povPerspective: profile.guardrails.povPerspective,
+  gender: profile.identity.gender,
+})}
 
 RULES:
 1. Physical actions and micro-expressions in asterisks (*like this*), spoken dialogue in quotes ("like this").
@@ -292,7 +345,12 @@ ${JSON.stringify(currentSummary, null, 2)}
 USER'S INSTRUCTION / DESIRED IMPROVEMENTS:
 "${params.instruction}"
 ${scopeNote}
-${buildLanguageDirectives(params.instruction, params.profile.guardrails.languageDialect)}
+${buildLanguageDirectives({
+  text: params.instruction,
+  currentDialect: params.profile.guardrails.languageDialect,
+  povPerspective: params.profile.guardrails.povPerspective,
+  gender: params.profile.identity.gender,
+})}
 
 CORE RULES:
 1. Identify all sections affected by the user's request. Modify only the necessary sections; leave unaffected sections unchanged.

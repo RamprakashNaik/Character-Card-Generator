@@ -168,6 +168,34 @@ export const DialogueTab: React.FC = () => {
                 Hinglish
               </button>
             </div>
+
+            {/* Quick Perspective Switcher */}
+            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => updateGuardrails({ povPerspective: 'first_person' })}
+                className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+                  guardrails.povPerspective === 'first_person'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Narrate in First-Person: 'Main / Mera / Mujhe / I'"
+              >
+                1st-Person (Main)
+              </button>
+              <button
+                type="button"
+                onClick={() => updateGuardrails({ povPerspective: 'third_person' })}
+                className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+                  guardrails.povPerspective !== 'first_person'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Narrate in Third-Person: '{{char}} / Wo / He / She'"
+              >
+                3rd-Person (Wo)
+              </button>
+            </div>
           </div>
           <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-2">
             <span>Perspective: <strong className="text-slate-300">{povLabel}</strong></span>

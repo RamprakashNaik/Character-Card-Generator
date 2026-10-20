@@ -71,6 +71,8 @@ export const SectionRefineModal: React.FC<SectionRefineModalProps> = ({
       currentContent,
       userInstruction: instruction,
       languageDialect: profile.guardrails.languageDialect,
+      povPerspective: profile.guardrails.povPerspective,
+      gender: profile.identity.gender,
     });
 
     let accumulated = '';
