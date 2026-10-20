@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCardStore } from '../../store/useCardStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { streamChatCompletion } from '../../services/aiClient';
@@ -92,6 +92,25 @@ export const GlobalRefineModal: React.FC<GlobalRefineModalProps> = ({ isOpen, on
   const [sectionsToApply, setSectionsToApply] = useState<Record<string, boolean>>({});
   const [activeDiffTab, setActiveDiffTab] = useState<string>('');
   const [appliedSuccess, setAppliedSuccess] = useState(false);
+
+  // Reset completion state whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setAppliedSuccess(false);
+      setParsedUpdates(null);
+      setChangeSummary([]);
+      setModifiedSections([]);
+      setError(null);
+      setIsGenerating(false);
+      setGenerationStep('');
+    }
+  }, [isOpen]);
+
+  const handleClose = () => {
+    setAppliedSuccess(false);
+    setParsedUpdates(null);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -272,8 +291,8 @@ export const GlobalRefineModal: React.FC<GlobalRefineModalProps> = ({ isOpen, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-3xl max-h-[96vh] sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -296,7 +315,7 @@ export const GlobalRefineModal: React.FC<GlobalRefineModalProps> = ({ isOpen, on
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -321,6 +340,29 @@ export const GlobalRefineModal: React.FC<GlobalRefineModalProps> = ({ isOpen, on
               <p className="text-xs text-slate-400">
                 All selected sections have been updated. You can always use Undo (Ctrl+Z) if needed.
               </p>
+              <div className="pt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedSuccess(false);
+                    setParsedUpdates(null);
+                    setChangeSummary([]);
+                    setModifiedSections([]);
+                    setInstruction('');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-xs font-semibold text-white shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Refine Again</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           ) : parsedUpdates ? (
             /* Review & Diff Screen */
@@ -504,7 +546,7 @@ export const GlobalRefineModal: React.FC<GlobalRefineModalProps> = ({ isOpen, on
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white text-xs font-semibold transition-colors"
                 >
                   Cancel
@@ -535,7 +577,7 @@ export const GlobalRefineModal: React.FC<GlobalRefineModalProps> = ({ isOpen, on
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white text-xs font-semibold transition-colors"
                 >
                   Cancel

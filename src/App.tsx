@@ -140,7 +140,7 @@ export const App: React.FC = () => {
         {/* Left Column: Granular Editor */}
         <div className="flex-1 bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-w-0">
           {/* Subheader: Character Name + Undo/Redo & Reset Toolbar */}
-          <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-900/90 flex flex-wrap items-center justify-between gap-3">
+          <div className="p-3 sm:p-5 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg font-bold text-white truncate flex items-center gap-2">
                 <span>{profile.identity.name || 'Unnamed Character'}</span>
