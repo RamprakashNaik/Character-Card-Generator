@@ -19,7 +19,7 @@ import {
 import { SectionRefineModal } from '../AI/SectionRefineModal';
 
 export const DialogueTab: React.FC = () => {
-  const { profile, updateScenario, updateDialogues } = useCardStore();
+  const { profile, updateScenario, updateDialogues, updateGuardrails } = useCardStore();
   const { settings } = useSettingsStore();
   const { scenario, dialogues, guardrails } = profile;
 
@@ -143,6 +143,31 @@ export const DialogueTab: React.FC = () => {
             <span className="text-xs font-bold text-indigo-300 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
               {narrationStyleTitle}
             </span>
+            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => updateGuardrails({ languageDialect: 'english' })}
+                className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+                  guardrails.languageDialect !== 'hinglish'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => updateGuardrails({ languageDialect: 'hinglish' })}
+                className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+                  guardrails.languageDialect === 'hinglish'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Strictly format First Message and dialogues in Hinglish (Roman script)"
+              >
+                🇮🇳 Hinglish
+              </button>
+            </div>
           </div>
           <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-2">
             <span>Perspective: <strong className="text-slate-300">{povLabel}</strong></span>

@@ -17,6 +17,7 @@ Your specialty is crafting deeply immersive, psychologically compelling roleplay
 2. POSITIVE USER AGENCY: Never write dialogue or actions on behalf of {{user}}. The opening scene must describe {{char}} and the immediate environment, ending on an engaging hook that invites {{user}} to respond.
 3. VOICE DISTINCTIVENESS: Specific speech mannerisms, vocabulary, and multi-scenario example dialogues demonstrating emotional range.
 4. CONTEXT ECONOMY: Lean, powerful descriptions avoiding generic filler prose.
+5. LANGUAGE & DIALECT FIDELITY: When a specific language or dialect (such as Hinglish in Roman script) is requested, strictly enforce it across all dialogue quotes and narrative actions without ever reverting to standard English.
 Always respond with valid JSON when requested.`;
 
 export function buildDeduceContextPrompt(baseIdea: string): string {
@@ -135,13 +136,37 @@ JSON SCHEMA:
 }`;
 }
 
+/**
+ * Detects if the user or profile requires Hinglish / Romanized Hindi and provides strict instructions
+ */
+export function buildLanguageDirectives(text: string, currentDialect?: string): string {
+  const isHinglish =
+    /\b(hinglish|hindi|urdu)\b/i.test(text) || currentDialect === 'hinglish';
+
+  if (isHinglish) {
+    return `
+*** CRITICAL MANDATORY LANGUAGE PROTOCOL: HINGLISH IN ROMAN SCRIPT (NO ENGLISH REGRESSION) ***
+The user requires HINGLISH (conversational Hindi written in the Roman/Latin English alphabet):
+1. DIALOGUE IN QUOTES: All spoken dialogue inside double quotes ("...") MUST be in 100% natural, modern conversational Hinglish (e.g. "Arre yaar, tu abhi tak yahan hai? Maine tujhe bola tha na sab theek ho jayega.").
+2. NARRATION & ACTIONS IN ASTERISKS: When storytelling, narrative prose, or dialogue actions are requested in Hinglish, the descriptive actions inside asterisks (*...*) must also maintain natural Hinglish storytelling flow (e.g. *Dheere se piche mud kar dekhta hai aur thodi si muskaan ke saath aage badhta hai.*) rather than defaulting back to formal Oxford English.
+3. ABSOLUTELY ZERO ENGLISH REGRESSION: Do not start with one sentence in Hinglish and then switch the remaining paragraphs or dialogue turns to pure English. The entire section must consistently maintain authentic Hinglish.
+4. SCRIPT ENFORCEMENT: Strictly use the standard English/Latin alphabet for Hindi words (Romanized Hinglish). NEVER output Devanagari script (no हिन्दी letters) unless explicitly asked.
+5. NATURAL SLANG: Use authentic modern conversational vocabulary ('yaar', 'arre', 'kya scene hai', 'samjhe na', 'bilkul', 'tension mat le').
+`;
+  }
+
+  return '';
+}
+
 export function buildSectionRefinePrompt(params: {
   characterName: string;
   characterArchetype: string;
   sectionTitle: string;
   currentContent: string;
   userInstruction: string;
+  languageDialect?: string;
 }): string {
+  const langRule = buildLanguageDirectives(params.userInstruction, params.languageDialect);
   return `You are refining a specific section of the SillyTavern character card for:
 CHARACTER: ${params.characterName} (${params.characterArchetype})
 SECTION: ${params.sectionTitle}
@@ -153,6 +178,7 @@ ${params.currentContent}
 
 USER'S DESIRED ADJUSTMENT / PREFERENCE:
 "${params.userInstruction}"
+${langRule}
 
 INSTRUCTIONS:
 - Refine the text to directly fulfill the user's preference while maintaining complete stylistic consistency with the character.
@@ -197,6 +223,7 @@ CURRENT SCENARIO: ${profile.scenario.environmentAndContext}
 TARGET NARRATION STYLE: ${narrationDesc}
 PERSPECTIVE: ${povDesc}
 STORY DIRECTION & GOAL: ${profile.guardrails.storyGoalAndDirection || 'Maintain engaging roleplay tension and distinct character voice.'}
+${buildLanguageDirectives(profile.guardrails.storyGoalAndDirection || '', profile.guardrails.languageDialect)}
 
 RULES:
 1. Physical actions and micro-expressions in asterisks (*like this*), spoken dialogue in quotes ("like this").
@@ -265,6 +292,7 @@ ${JSON.stringify(currentSummary, null, 2)}
 USER'S INSTRUCTION / DESIRED IMPROVEMENTS:
 "${params.instruction}"
 ${scopeNote}
+${buildLanguageDirectives(params.instruction, params.profile.guardrails.languageDialect)}
 
 CORE RULES:
 1. Identify all sections affected by the user's request. Modify only the necessary sections; leave unaffected sections unchanged.

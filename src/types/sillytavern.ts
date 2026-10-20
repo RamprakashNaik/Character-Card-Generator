@@ -145,6 +145,8 @@ export interface GranularCharacterProfile {
 
   // 9. Directives, Narration Style & Story Direction
   guardrails: {
+    languageDialect?: 'english' | 'hinglish' | 'custom';
+    customLanguage?: string;
     narrationStyle: 'literary' | 'cinematic' | 'conversational' | 'visceral';
     povPerspective: 'third_person' | 'first_person';
     pacingRule: 'slow_burn' | 'balanced' | 'fast_paced';

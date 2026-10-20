@@ -254,6 +254,41 @@ export const AdvancedTab: React.FC = () => {
         </div>
       </div>
 
+      {/* Language & Dialect Selector */}
+      <div className="pt-2 border-t border-slate-800">
+        <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+          Language & Dialogue Dialect
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => updateGuardrails({ languageDialect: 'english' })}
+            className={`p-2.5 rounded-xl border text-left transition-all ${
+              guardrails.languageDialect !== 'hinglish'
+                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200'
+                : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+            }`}
+          >
+            <div className="text-xs font-bold text-white">English (Standard)</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Standard English narrative & dialogues</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => updateGuardrails({ languageDialect: 'hinglish' })}
+            className={`p-2.5 rounded-xl border text-left transition-all ${
+              guardrails.languageDialect === 'hinglish'
+                ? 'bg-amber-600/20 border-amber-500 text-amber-200'
+                : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+            }`}
+          >
+            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>🇮🇳 Hinglish (Roman Script)</span>
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Hindi in English letters for dialogue & storytelling</div>
+          </button>
+        </div>
+      </div>
+
       {/* 3. Story Trajectory & Roleplay Goal ("How it should tell the roleplay to go") */}
       <div className="pt-2 border-t border-slate-800">
         <div className="flex items-center justify-between mb-1.5">

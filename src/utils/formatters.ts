@@ -101,6 +101,7 @@ export function createDefaultProfile(): GranularCharacterProfile {
       },
     ],
     guardrails: {
+      languageDialect: 'english',
       narrationStyle: 'literary',
       povPerspective: 'third_person',
       pacingRule: 'slow_burn',
@@ -299,6 +300,17 @@ export function compileSystemPrompt(profile: GranularCharacterProfile): string {
     );
   }
 
+  // Language & Dialect Enforcement
+  if (profile.guardrails.languageDialect === 'hinglish') {
+    directives.push(
+      `[CRITICAL LANGUAGE REQUIREMENT: Strictly speak and narrate in natural conversational Hinglish using the Latin/Roman alphabet (Hindi written in English letters, e.g. "Arre yaar", "Kya kar rahe ho?"). Both spoken dialogue in quotes and narrative descriptions in asterisks must maintain authentic Hinglish phrasing. Never revert to pure English or Devanagari script.]`
+    );
+  } else if (profile.guardrails.languageDialect === 'custom' && profile.guardrails.customLanguage) {
+    directives.push(
+      `[CRITICAL LANGUAGE REQUIREMENT: Strictly converse and narrate in ${profile.guardrails.customLanguage}. Maintain this language/dialect uniformly across all turns.]`
+    );
+  }
+
   // 4. Custom System Directives
   if (profile.guardrails.customSystemPrompt) {
     directives.push(profile.guardrails.customSystemPrompt);
@@ -323,6 +335,11 @@ export function compilePostHistoryInstructions(profile: GranularCharacterProfile
   // Story Direction & Goal
   if (profile.guardrails.storyGoalAndDirection && profile.guardrails.storyGoalAndDirection.trim()) {
     instructions.push(`[Narrative Direction: ${profile.guardrails.storyGoalAndDirection.trim()}. Actively steer {{char}}'s choices and dialogue toward this objective without forcing {{user}}'s reactions.]`);
+  }
+
+  // Language Lock
+  if (profile.guardrails.languageDialect === 'hinglish') {
+    instructions.push(`[Language Lock: Maintain 100% natural conversational Hinglish in Roman/Latin script for both dialogue and narrative actions. Do not slip into pure English.]`);
   }
 
   // Agency reminder at depth
@@ -444,6 +461,7 @@ export function v2CardToProfile(card: CharacterCardV2 | CharacterDataV2 | Charac
       ? data.character_book.entries
       : [],
     guardrails: {
+      languageDialect: 'english',
       narrationStyle: 'literary',
       povPerspective: 'third_person',
       pacingRule: 'slow_burn',

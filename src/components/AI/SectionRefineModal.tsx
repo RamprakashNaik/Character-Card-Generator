@@ -70,6 +70,7 @@ export const SectionRefineModal: React.FC<SectionRefineModalProps> = ({
       sectionTitle,
       currentContent,
       userInstruction: instruction,
+      languageDialect: profile.guardrails.languageDialect,
     });
 
     let accumulated = '';
