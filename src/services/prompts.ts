@@ -212,6 +212,89 @@ Output ONLY a valid JSON object:
 }`;
 }
 
+export interface GlobalRefineResult {
+  changeSummary: string[];
+  modifiedSections: string[];
+  updates: Partial<GranularCharacterProfile>;
+}
+
+export function buildGlobalRefinePrompt(params: {
+  profile: GranularCharacterProfile;
+  instruction: string;
+  selectedSections?: string[];
+}): string {
+  const currentSummary = {
+    identity: {
+      name: params.profile.identity.name,
+      nickname: params.profile.identity.nickname,
+      age: params.profile.identity.age,
+      gender: params.profile.identity.gender,
+      species: params.profile.identity.species,
+      archetype: params.profile.identity.archetype,
+      tags: params.profile.identity.tags,
+    },
+    appearance: params.profile.appearance,
+    wardrobe: params.profile.wardrobe,
+    personality: params.profile.personality,
+    background: params.profile.background,
+    scenario: params.profile.scenario,
+    dialogues: params.profile.dialogues,
+    guardrails: {
+      narrationStyle: params.profile.guardrails.narrationStyle,
+      povPerspective: params.profile.guardrails.povPerspective,
+      pacingRule: params.profile.guardrails.pacingRule,
+      storyGoalAndDirection: params.profile.guardrails.storyGoalAndDirection,
+    },
+    lorebook: params.profile.lorebook.map(e => ({
+      comment: e.comment,
+      keys: e.keys,
+      content: e.content,
+    })),
+  };
+
+  const scopeNote = params.selectedSections && params.selectedSections.length > 0
+    ? `\nFOCUS PRIMARILY ON THESE USER-REQUESTED SECTIONS: ${params.selectedSections.join(', ')}.`
+    : '\nAUTONOMOUSLY DETECT which sections of the card must be updated, refined, or rewritten to satisfy the user\'s instruction.';
+
+  return `You are an elite SillyTavern character card architect and master narrative editor.
+The user wants to make global or cross-section improvements/modifications to their existing character card.
+
+CURRENT CHARACTER DATA:
+${JSON.stringify(currentSummary, null, 2)}
+
+USER'S INSTRUCTION / DESIRED IMPROVEMENTS:
+"${params.instruction}"
+${scopeNote}
+
+CORE RULES:
+1. Identify all sections affected by the user's request. Modify only the necessary sections; leave unaffected sections unchanged.
+2. Maintain high quality, sensory depth, and voice consistency across all modified fields.
+3. Anti-Railroading: In firstMessage and dialogues, NEVER speak, think, or act for {{user}}. The opening message must end with a compelling hook for {{user}} to respond.
+4. If wardrobe or appearance changes, ensure any visual mentions in scenario and greetings stay coherent.
+5. If narration style or tone changes, harmonize the prose in scenario.firstMessage and dialogues.
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "changeSummary": [
+    "Brief explanation of change made to Section 1",
+    "Brief explanation of change made to Section 2"
+  ],
+  "modifiedSections": ["wardrobe", "scenario", "dialogues"],
+  "updates": {
+    // Top-level keys for ONLY the sections that were modified:
+    // "identity": { ... },
+    // "appearance": { ... },
+    // "wardrobe": { ... },
+    // "personality": { ... },
+    // "background": { ... },
+    // "scenario": { ... },
+    // "dialogues": { ... },
+    // "guardrails": { ... },
+    // "lorebook": [ { "comment": "...", "keys": ["..."], "content": "..." } ]
+  }
+}`;
+}
+
 export function buildSandboxChatMessages(
   profile: GranularCharacterProfile,
   chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>

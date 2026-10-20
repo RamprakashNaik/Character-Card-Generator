@@ -17,10 +17,12 @@ import { IdeaWizardModal } from './components/Wizard/IdeaWizardModal';
 import { TestChatModal } from './components/Sandbox/TestChatModal';
 import { ExportModal } from './components/Preview/ExportModal';
 import { AuditorModal } from './components/AI/AuditorModal';
+import { GlobalRefineModal } from './components/AI/GlobalRefineModal';
 import { extractCharacterFromPng } from './utils/pngMetadata';
 import { v2CardToProfile } from './utils/formatters';
 import {
   Sparkles,
+  Wand2,
   Download,
   MessageSquare,
   ShieldCheck,
@@ -48,6 +50,7 @@ export const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isAuditorOpen, setIsAuditorOpen] = useState(false);
+  const [isGlobalRefineOpen, setIsGlobalRefineOpen] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   // Global Drag & Drop Handler for SillyTavern PNG & JSON cards
@@ -115,6 +118,7 @@ export const App: React.FC = () => {
       <Navbar
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenWizard={() => setIsWizardOpen(true)}
+        onOpenGlobalRefine={() => setIsGlobalRefineOpen(true)}
         onOpenChat={() => setIsChatOpen(true)}
         onOpenExport={() => setIsExportOpen(true)}
         onOpenAuditor={() => setIsAuditorOpen(true)}
@@ -151,7 +155,22 @@ export const App: React.FC = () => {
               </p>
             </div>
 
-            {/* Undo / Redo / Reset toolbar */}
+            <div className="flex items-center gap-2">
+              {/* Global Refine AI Button */}
+              <button
+                type="button"
+                onClick={() => setIsGlobalRefineOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600/90 to-purple-600/90 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 border border-indigo-400/30 transition-all"
+                title="Global Refine: Describe improvements to automatically update affected sections"
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Refine with AI</span>
+                <span className="sm:hidden">Refine</span>
+              </button>
+
+              <div className="h-4 w-px bg-slate-800 mx-0.5 hidden sm:block" />
+
+              {/* Undo / Redo / Reset toolbar */}
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -185,6 +204,8 @@ export const App: React.FC = () => {
                 <RotateCcw className="w-4 h-4" />
               </button>
             </div>
+          </div>
+
           </div>
 
           {/* Editor Tabs Navigation */}
@@ -264,6 +285,7 @@ export const App: React.FC = () => {
       <TestChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
       <AuditorModal isOpen={isAuditorOpen} onClose={() => setIsAuditorOpen(false)} />
+      <GlobalRefineModal isOpen={isGlobalRefineOpen} onClose={() => setIsGlobalRefineOpen(false)} />
     </div>
   );
 };

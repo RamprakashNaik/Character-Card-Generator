@@ -38,6 +38,7 @@ interface CardState {
   addLorebookEntry: (entry: Omit<LorebookEntry, 'id'>) => void;
   updateLorebookEntry: (id: number, updates: Partial<LorebookEntry>) => void;
   removeLorebookEntry: (id: number) => void;
+  applyPartialUpdates: (updates: Partial<GranularCharacterProfile>) => void;
 
   // History & Reset
   undo: () => void;
@@ -198,6 +199,43 @@ export const useCardStore = create<CardState>((set, get) => {
       const updated: GranularCharacterProfile = {
         ...current,
         lorebook: updatedLorebook,
+      };
+      recordHistory(updated);
+    },
+
+    applyPartialUpdates: updates => {
+      const current = get().profile;
+      const updated: GranularCharacterProfile = {
+        ...current,
+        identity: updates.identity
+          ? {
+              ...current.identity,
+              ...updates.identity,
+              avatarUrl: current.identity.avatarUrl || updates.identity.avatarUrl || '',
+            }
+          : current.identity,
+        appearance: updates.appearance
+          ? { ...current.appearance, ...updates.appearance }
+          : current.appearance,
+        wardrobe: updates.wardrobe
+          ? { ...current.wardrobe, ...updates.wardrobe }
+          : current.wardrobe,
+        personality: updates.personality
+          ? { ...current.personality, ...updates.personality }
+          : current.personality,
+        background: updates.background
+          ? { ...current.background, ...updates.background }
+          : current.background,
+        scenario: updates.scenario
+          ? { ...current.scenario, ...updates.scenario }
+          : current.scenario,
+        dialogues: updates.dialogues
+          ? { ...current.dialogues, ...updates.dialogues }
+          : current.dialogues,
+        guardrails: updates.guardrails
+          ? { ...current.guardrails, ...updates.guardrails }
+          : current.guardrails,
+        lorebook: updates.lorebook ? updates.lorebook : current.lorebook,
       };
       recordHistory(updated);
     },

@@ -5,6 +5,7 @@ import { extractCharacterFromPng } from '../utils/pngMetadata';
 import { v2CardToProfile } from '../utils/formatters';
 import {
   Sparkles,
+  Wand2,
   Download,
   Upload,
   Settings,
@@ -18,6 +19,7 @@ import {
 interface NavbarProps {
   onOpenSettings: () => void;
   onOpenWizard: () => void;
+  onOpenGlobalRefine: () => void;
   onOpenChat: () => void;
   onOpenExport: () => void;
   onOpenAuditor: () => void;
@@ -26,6 +28,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onOpenWizard,
+  onOpenGlobalRefine,
   onOpenChat,
   onOpenExport,
   onOpenAuditor,
@@ -121,6 +124,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Sparkles className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Idea to Card</span>
             <span className="sm:hidden">Idea</span>
+          </button>
+
+          {/* Global Refine Button */}
+          <button
+            type="button"
+            onClick={onOpenGlobalRefine}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 text-purple-200 hover:text-white font-semibold text-xs border border-purple-500/40 shadow-sm transition-all shrink-0"
+            title="Describe improvements to automatically edit affected sections"
+          >
+            <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden sm:inline">Refine Card</span>
+            <span className="sm:hidden">Refine</span>
           </button>
 
           {/* Test Chat Button */}
