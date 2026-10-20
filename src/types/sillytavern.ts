@@ -143,8 +143,12 @@ export interface GranularCharacterProfile {
   // 8. World Info & Lorebook
   lorebook: LorebookEntry[];
 
-  // 9. Directives & Guardrails
+  // 9. Directives, Narration Style & Story Direction
   guardrails: {
+    narrationStyle: 'literary' | 'cinematic' | 'conversational' | 'visceral';
+    povPerspective: 'third_person' | 'first_person';
+    pacingRule: 'slow_burn' | 'balanced' | 'fast_paced';
+    storyGoalAndDirection: string; // Where the roleplay should steer / main objective
     preventUserImpersonation: boolean;
     immersiveProseStyle: boolean;
     pastTenseNarration: boolean;

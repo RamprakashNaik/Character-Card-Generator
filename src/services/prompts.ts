@@ -3,7 +3,13 @@
  */
 
 import { GranularCharacterProfile } from '../types/sillytavern';
-import { compileDescription, compilePersonality, compileExampleDialogues, compileSystemPrompt } from '../utils/formatters';
+import {
+  compileDescription,
+  compilePersonality,
+  compileExampleDialogues,
+  compileSystemPrompt,
+  compilePostHistoryInstructions,
+} from '../utils/formatters';
 
 export const SYSTEM_ROLE_ARCHITECT = `You are a master character designer, interactive narrative author, and elite SillyTavern character card engineer.
 Your specialty is crafting deeply immersive, psychologically compelling roleplay characters adhering to modern LLM best practices:
@@ -189,8 +195,15 @@ export function buildSandboxChatMessages(
     .filter(Boolean)
     .join('\n\n');
 
-  return [
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { role: 'system', content: fullSystemMessage },
     ...chatHistory,
   ];
+
+  const postHistory = compilePostHistoryInstructions(profile);
+  if (postHistory) {
+    messages.push({ role: 'system', content: postHistory });
+  }
+
+  return messages;
 }

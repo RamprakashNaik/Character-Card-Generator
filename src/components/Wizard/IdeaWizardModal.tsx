@@ -269,6 +269,10 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
             }))
           : [],
         guardrails: {
+          narrationStyle: 'literary',
+          povPerspective: 'third_person',
+          pacingRule: 'slow_burn',
+          storyGoalAndDirection: inferredDynamic ? `Develop dynamic: ${inferredDynamic}` : '',
           preventUserImpersonation: true,
           immersiveProseStyle: true,
           pastTenseNarration: true,

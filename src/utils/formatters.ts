@@ -101,6 +101,10 @@ export function createDefaultProfile(): GranularCharacterProfile {
       },
     ],
     guardrails: {
+      narrationStyle: 'literary',
+      povPerspective: 'third_person',
+      pacingRule: 'slow_burn',
+      storyGoalAndDirection: 'Steer the conversation toward negotiating a fragile alliance for a dangerous relic retrieval heist.',
       preventUserImpersonation: true,
       immersiveProseStyle: true,
       pastTenseNarration: true,
@@ -252,32 +256,85 @@ export function compileExampleDialogues(profile: GranularCharacterProfile): stri
 }
 
 /**
- * Compiles system prompt with selected professional guardrails
+ * Compiles system prompt with selected narration style, formatting, and guardrails
  */
 export function compileSystemPrompt(profile: GranularCharacterProfile): string {
   const directives: string[] = [];
 
+  // 1. Perspective & Format
+  if (profile.guardrails.povPerspective === 'first_person') {
+    directives.push(`Write in the first-person perspective as {{char}} ("I looked", "my hands").`);
+  } else {
+    directives.push(
+      profile.guardrails.pastTenseNarration
+        ? `Write in third-person narrative past-tense ("{{char}} looked", "their hands").`
+        : `Write in third-person narrative present-tense ("{{char}} looks", "their hands").`
+    );
+  }
+  directives.push(`Format physical actions, micro-expressions, and environment in asterisks (*like this*), and spoken dialogue in double quotes ("like this").`);
+
+  // 2. Narration Style
+  if (profile.guardrails.narrationStyle === 'literary') {
+    directives.push(
+      `Adopt an atmospheric, literary prose style. Describe setting, physical micro-expressions, and emotional undertones with vivid sensory depth (lighting, sounds, scents, textures) before speaking.`
+    );
+  } else if (profile.guardrails.narrationStyle === 'cinematic') {
+    directives.push(
+      `Adopt a cinematic visual pacing with sharp camera-like framing. Focus on dynamic environmental interactions, spatial blocking, and rapid sensory beats.`
+    );
+  } else if (profile.guardrails.narrationStyle === 'visceral') {
+    directives.push(
+      `Adopt a raw, visceral narrative tone focusing on physiological sensations (heart rate, adrenaline, tension, physical touch, breathing patterns).`
+    );
+  } else if (profile.guardrails.narrationStyle === 'conversational') {
+    directives.push(
+      `Adopt a dialogue-focused, conversational style with sharp pacing, natural spoken rhythms, pauses, and concise physical gestures.`
+    );
+  }
+
+  // 3. User Agency & Anti-Impersonation
   if (profile.guardrails.preventUserImpersonation) {
     directives.push(
-      `Never write dialogue or actions for {{user}}. Always end your responses with an action, dialogue, or environmental cue that leaves initiative to {{user}}.`
+      `Never write dialogue or actions on behalf of {{user}}. Focus entirely on {{char}}'s perspective and reactions, ending each turn with an action, question, or environmental beat that leaves initiative to {{user}}.`
     );
   }
 
-  if (profile.guardrails.immersiveProseStyle) {
-    directives.push(
-      `Employ vivid sensory details (lighting, sounds, physical micro-expressions). Show emotions through behavior rather than naming them directly.`
-    );
-  }
-
-  if (profile.guardrails.pastTenseNarration) {
-    directives.push(`Maintain third-person narration in the past tense.`);
-  }
-
+  // 4. Custom System Directives
   if (profile.guardrails.customSystemPrompt) {
     directives.push(profile.guardrails.customSystemPrompt);
   }
 
   return directives.join('\n');
+}
+
+/**
+ * Compiles post-history depth prompt instructions for active plot steering and turn pacing
+ */
+export function compilePostHistoryInstructions(profile: GranularCharacterProfile): string {
+  const instructions: string[] = [];
+
+  // Pacing
+  if (profile.guardrails.pacingRule === 'slow_burn') {
+    instructions.push(`[Pacing: Maintain a measured, slow-burn pace. Do not rush time forward or resolve scene tension in a single turn.]`);
+  } else if (profile.guardrails.pacingRule === 'fast_paced') {
+    instructions.push(`[Pacing: Keep narrative momentum high. Escalate immediate consequences and introduce dynamic scene developments.]`);
+  }
+
+  // Story Direction & Goal
+  if (profile.guardrails.storyGoalAndDirection && profile.guardrails.storyGoalAndDirection.trim()) {
+    instructions.push(`[Narrative Direction: ${profile.guardrails.storyGoalAndDirection.trim()}. Actively steer {{char}}'s choices and dialogue toward this objective without forcing {{user}}'s reactions.]`);
+  }
+
+  // Agency reminder at depth
+  if (profile.guardrails.preventUserImpersonation) {
+    instructions.push(`[Never write or speak for {{user}}.]`);
+  }
+
+  if (profile.guardrails.postHistoryInstructions && profile.guardrails.postHistoryInstructions.trim()) {
+    instructions.push(profile.guardrails.postHistoryInstructions.trim());
+  }
+
+  return instructions.join('\n');
 }
 
 /**
@@ -296,7 +353,7 @@ export function profileToV2Card(profile: GranularCharacterProfile, style: Format
       mes_example: compileExampleDialogues(profile),
       creator_notes: profile.guardrails.creatorNotes,
       system_prompt: compileSystemPrompt(profile),
-      post_history_instructions: profile.guardrails.postHistoryInstructions,
+      post_history_instructions: compilePostHistoryInstructions(profile),
       alternate_greetings: profile.scenario.alternateGreetings,
       character_book: {
         name: `${profile.identity.name} Lorebook`,
@@ -387,6 +444,10 @@ export function v2CardToProfile(card: CharacterCardV2 | CharacterDataV2 | Charac
       ? data.character_book.entries
       : [],
     guardrails: {
+      narrationStyle: 'literary',
+      povPerspective: 'third_person',
+      pacingRule: 'slow_burn',
+      storyGoalAndDirection: '',
       preventUserImpersonation: true,
       immersiveProseStyle: true,
       pastTenseNarration: true,
