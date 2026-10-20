@@ -10,10 +10,10 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle2,
-  Sliders,
-  ExternalLink,
   Eye,
   EyeOff,
+  ShieldCheck,
+  Info,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -127,6 +127,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
+          {/* CORS Proxy Toggle */}
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="cors-proxy-toggle"
+              checked={settings.useProxy ?? false}
+              onChange={e => updateSettings({ useProxy: e.target.checked })}
+              className="mt-0.5 rounded accent-indigo-500 shrink-0"
+            />
+            <label htmlFor="cors-proxy-toggle" className="text-xs cursor-pointer">
+              <div className="font-semibold text-white flex items-center gap-1.5">
+                <span>Force Local CORS Proxy</span>
+                <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold">
+                  Bypass Restrictions
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                Routes all requests through Vite's built-in dev proxy. Useful if LM Studio or Ollama blocks direct browser requests. (Also auto-falls-back automatically on network errors).
+              </div>
+            </label>
+          </div>
+
           {/* API Key */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -204,9 +226,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             {modelFetchError && (
               <div className="flex items-start gap-2 mt-2 text-xs text-rose-300 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
                 <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-rose-200">Connection Note</div>
-                  <div className="mt-0.5 text-rose-300/90">{modelFetchError}</div>
+                <div className="space-y-1">
+                  <div className="font-semibold text-rose-200">Connection Trouble</div>
+                  <div className="text-rose-300/90 leading-relaxed">{modelFetchError}</div>
+                  <div className="text-[11px] text-slate-300 mt-2 bg-slate-950/60 p-2 rounded-lg">
+                    <strong>Quick Fix:</strong><br />
+                    • <strong>LM Studio:</strong> In LM Studio, click <strong>Local Server</strong> tab, ensure the server is <strong>Running</strong>, and check <strong>Enable CORS</strong>.<br />
+                    • <strong>Ollama:</strong> Run <code className="text-indigo-300 font-mono">$env:OLLAMA_ORIGINS="*" ; ollama serve</code> in PowerShell before connecting.<br />
+                    • <strong>Auto Proxy:</strong> Check the <em>"Force Local CORS Proxy"</em> toggle above.
+                  </div>
                 </div>
               </div>
             )}

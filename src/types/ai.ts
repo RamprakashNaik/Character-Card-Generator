@@ -7,6 +7,7 @@ export interface AISettings {
   model: string;
   temperature: number;
   maxTokens: number;
+  useProxy?: boolean;
 }
 
 export interface ChatMessage {
@@ -44,13 +45,13 @@ export const DEFAULT_PRESETS: Record<AIProviderPreset, { name: string; baseUrl: 
     name: 'LM Studio (Local)',
     baseUrl: 'http://localhost:1234/v1',
     defaultModel: 'local-model',
-    note: 'Ensure CORS is enabled in LM Studio settings.',
+    note: 'Built-in auto-proxy bypasses CORS automatically.',
   },
   ollama: {
     name: 'Ollama (Local)',
     baseUrl: 'http://localhost:11434/v1',
     defaultModel: 'llama3:8b',
-    note: 'Set OLLAMA_ORIGINS="*" before running ollama serve.',
+    note: 'Built-in auto-proxy bypasses CORS automatically.',
   },
   custom: {
     name: 'Custom OpenAI-Compatible',

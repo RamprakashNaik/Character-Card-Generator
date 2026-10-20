@@ -1,6 +1,7 @@
 /**
  * OpenAI-Compatible API Client supporting Streaming, Model Fetching,
  * and robust error handling for OpenRouter, Groq, LM Studio, Ollama, etc.
+ * Features automatic fallback to local Vite CORS proxy to bypass browser restrictions.
  */
 
 import { AISettings, ChatMessage, ModelOption } from '../types/ai';
@@ -23,6 +24,52 @@ export function normalizeBaseUrl(url: string): string {
 }
 
 /**
+ * Executes a fetch request with automatic fallback to Vite's local CORS proxy
+ */
+async function fetchWithCorsFallback(
+  targetUrl: string,
+  options: RequestInit,
+  forceProxy: boolean = false
+): Promise<Response> {
+  if (forceProxy) {
+    const proxyHeaders = new Headers(options.headers || {});
+    proxyHeaders.set('x-target-url', targetUrl);
+    return fetch('/api/proxy', {
+      ...options,
+      headers: proxyHeaders,
+    });
+  }
+
+  try {
+    const res = await fetch(targetUrl, options);
+    return res;
+  } catch (err: any) {
+    if (err.name === 'AbortError') throw err;
+
+    // Automatic fallback: If browser blocked due to CORS (TypeError: Failed to fetch)
+    if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+      try {
+        const proxyHeaders = new Headers(options.headers || {});
+        proxyHeaders.set('x-target-url', targetUrl);
+        const proxyRes = await fetch('/api/proxy', {
+          ...options,
+          headers: proxyHeaders,
+        });
+        return proxyRes;
+      } catch (proxyErr: any) {
+        if (proxyErr.name === 'AbortError') throw proxyErr;
+        // If even the proxy failed, the target server itself is down or unreachable
+        throw new AIClientError(
+          `Unable to connect to ${targetUrl}. Ensure your local server (LM Studio / Ollama) is started and listening on this port.`
+        );
+      }
+    }
+
+    throw err;
+  }
+}
+
+/**
  * Fetches available models from the /models endpoint
  */
 export async function fetchAvailableModels(settings: AISettings): Promise<ModelOption[]> {
@@ -41,7 +88,12 @@ export async function fetchAvailableModels(settings: AISettings): Promise<ModelO
   }
 
   try {
-    const res = await fetch(endpoint, { method: 'GET', headers });
+    const res = await fetchWithCorsFallback(
+      endpoint,
+      { method: 'GET', headers },
+      settings.useProxy ?? false
+    );
+
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
       throw new AIClientError(
@@ -63,11 +115,6 @@ export async function fetchAvailableModels(settings: AISettings): Promise<ModelO
     return [];
   } catch (err: any) {
     if (err instanceof AIClientError) throw err;
-    if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
-      throw new AIClientError(
-        'Network error or CORS restriction. If using LM Studio or Ollama, make sure CORS is enabled (e.g. OLLAMA_ORIGINS="*").'
-      );
-    }
     throw new AIClientError(`Unable to reach endpoint: ${err.message}`);
   }
 }
@@ -111,19 +158,19 @@ export async function streamChatCompletion(
 
   let response: Response;
   try {
-    response = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-      signal,
-    });
+    response = await fetchWithCorsFallback(
+      endpoint,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal,
+      },
+      settings.useProxy ?? false
+    );
   } catch (err: any) {
     if (err.name === 'AbortError') throw err;
-    if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
-      throw new AIClientError(
-        'Network or CORS error. Verify the API Base URL is reachable and CORS headers are allowed by the server.'
-      );
-    }
+    if (err instanceof AIClientError) throw err;
     throw new AIClientError(`Connection failed: ${err.message}`);
   }
 
@@ -153,12 +200,11 @@ export async function streamChatCompletion(
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      // Keep last incomplete chunk in buffer
       buffer = lines.pop() || '';
 
       for (const line of lines) {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith(':')) continue; // skip comments and empty lines
+        if (!trimmed || trimmed.startsWith(':')) continue;
 
         if (trimmed.startsWith('data: ')) {
           const payload = trimmed.slice(6);
@@ -171,9 +217,7 @@ export async function streamChatCompletion(
               accumulatedText += delta;
               onChunk(delta);
             }
-          } catch {
-            // ignore non-json keepalive lines
-          }
+          } catch {}
         }
       }
     }
