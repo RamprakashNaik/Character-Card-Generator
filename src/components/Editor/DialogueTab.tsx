@@ -165,7 +165,7 @@ export const DialogueTab: React.FC = () => {
                 }`}
                 title="Strictly format First Message and dialogues in Hinglish (Roman script)"
               >
-                🇮🇳 Hinglish
+                Hinglish
               </button>
             </div>
           </div>

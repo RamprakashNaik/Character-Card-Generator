@@ -282,7 +282,7 @@ export const AdvancedTab: React.FC = () => {
             }`}
           >
             <div className="text-xs font-bold text-white flex items-center gap-1.5">
-              <span>🇮🇳 Hinglish (Roman Script)</span>
+              <span>Hinglish (Roman Script)</span>
             </div>
             <div className="text-[10px] text-slate-500 mt-0.5">Hindi in English letters for dialogue & storytelling</div>
           </button>

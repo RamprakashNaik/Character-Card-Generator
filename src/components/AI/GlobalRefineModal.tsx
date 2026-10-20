@@ -49,11 +49,11 @@ const QUICK_INSPIRATION_PRESETS = [
     instruction: 'Add deeper emotional stakes, hidden regrets, and vulnerable traits beneath their tough exterior, making them more relatable in roleplay.',
   },
   {
-    label: '🇮🇳 100% Hinglish Voice & Storytelling',
+    label: '100% Hinglish Voice & Storytelling',
     instruction: 'Rewrite the first message and all example dialogues in 100% natural conversational Hinglish using Roman/Latin alphabet. Ensure BOTH spoken dialogue and narrative descriptive actions stay strictly in authentic Hinglish without reverting to English.',
   },
   {
-    label: '🇮🇳 Hinglish Dialogue Only',
+    label: 'Hinglish Dialogue Only',
     instruction: 'Change all spoken dialogue quotes to natural conversational Hinglish (Roman script), while keeping third-person narrative actions in English.',
   },
   {
