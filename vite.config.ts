@@ -79,6 +79,10 @@ function corsProxyPlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    host: true, // Exposes on all network interfaces (e.g. 192.168.1.4)
+    port: 5173,
+  },
   plugins: [
     tailwindcss(),
     react(),
