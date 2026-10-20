@@ -1,17 +1,36 @@
 import React, { useState } from 'react';
 import { useCardStore } from '../../store/useCardStore';
-import { MessageSquare, Sparkles, Plus, Trash2, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { streamChatCompletion } from '../../services/aiClient';
+import { buildHarmonizeDialoguesPrompt } from '../../services/prompts';
+import {
+  MessageSquare,
+  Sparkles,
+  Plus,
+  Trash2,
+  ShieldAlert,
+  CheckCircle2,
+  Feather,
+  Compass,
+  Loader2,
+  Clock,
+  Wand2,
+} from 'lucide-react';
 import { SectionRefineModal } from '../AI/SectionRefineModal';
 
 export const DialogueTab: React.FC = () => {
   const { profile, updateScenario, updateDialogues } = useCardStore();
-  const { scenario, dialogues } = profile;
+  const { settings } = useSettingsStore();
+  const { scenario, dialogues, guardrails } = profile;
 
   const [activeRefineField, setActiveRefineField] = useState<{
     title: string;
     content: string;
     apply: (text: string) => void;
   } | null>(null);
+
+  const [isHarmonizing, setIsHarmonizing] = useState(false);
+  const [harmonizeNotice, setHarmonizeNotice] = useState<string | null>(null);
 
   // Check user impersonation in first message
   const userImpersonationPatterns = [
@@ -42,6 +61,62 @@ export const DialogueTab: React.FC = () => {
     updateScenario({ alternateGreetings: updated });
   };
 
+  // Harmonizes first message and all example dialogues with the chosen narration style
+  const handleHarmonizeWithNarrationStyle = async () => {
+    if (!settings.baseUrl) {
+      alert('AI Base URL is not configured. Please open Settings.');
+      return;
+    }
+
+    setIsHarmonizing(true);
+    setHarmonizeNotice('Adapting opening scene and dialogues to match your narration style...');
+
+    const prompt = buildHarmonizeDialoguesPrompt(profile);
+    let accumulated = '';
+
+    try {
+      await streamChatCompletion(
+        settings,
+        [{ role: 'user', content: prompt }],
+        chunk => {
+          accumulated += chunk;
+        }
+      );
+
+      let jsonStr = accumulated.trim();
+      const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (match) jsonStr = match[1];
+
+      const parsed = JSON.parse(jsonStr);
+
+      if (parsed.firstMessage) {
+        updateScenario({ firstMessage: parsed.firstMessage });
+      }
+
+      updateDialogues({
+        casual: parsed.casual || dialogues.casual,
+        conflict: parsed.conflict || dialogues.conflict,
+        vulnerable: parsed.vulnerable || dialogues.vulnerable,
+      });
+
+      setHarmonizeNotice('✔ Successfully harmonized greetings & dialogues with narration style!');
+      setTimeout(() => setHarmonizeNotice(null), 4000);
+    } catch (err: any) {
+      alert(`Failed to harmonize dialogues: ${err.message}`);
+    } finally {
+      setIsHarmonizing(false);
+    }
+  };
+
+  const narrationStyleTitle = {
+    literary: 'Atmospheric Literary',
+    cinematic: 'Cinematic Action',
+    visceral: 'Visceral Tension',
+    conversational: 'Dialogue-Focused Banter',
+  }[guardrails.narrationStyle] || 'Atmospheric Literary';
+
+  const povLabel = guardrails.povPerspective === 'first_person' ? '1st-Person (I)' : '3rd-Person ({{char}})';
+
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
@@ -56,6 +131,53 @@ export const DialogueTab: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Narration Voice & Alignment Banner */}
+      <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Feather className="w-4 h-4 text-indigo-400" />
+            <span className="text-xs font-bold text-white uppercase tracking-wider">
+              Active Narration Voice:
+            </span>
+            <span className="text-xs font-bold text-indigo-300 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+              {narrationStyleTitle}
+            </span>
+          </div>
+          <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-2">
+            <span>Perspective: <strong className="text-slate-300">{povLabel}</strong></span>
+            <span>•</span>
+            <span>Pacing: <strong className="text-slate-300">{guardrails.pacingRule}</strong></span>
+            {guardrails.storyGoalAndDirection && (
+              <>
+                <span>•</span>
+                <span className="truncate max-w-[200px] text-amber-300/80">Goal: {guardrails.storyGoalAndDirection}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleHarmonizeWithNarrationStyle}
+          disabled={isHarmonizing}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 transition-all shrink-0 disabled:opacity-50"
+        >
+          {isHarmonizing ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Wand2 className="w-3.5 h-3.5" />
+          )}
+          <span>{isHarmonizing ? 'Harmonizing Voice...' : 'Harmonize with Narration Style'}</span>
+        </button>
+      </div>
+
+      {harmonizeNotice && (
+        <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs text-indigo-200 animate-in fade-in flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+          <span>{harmonizeNotice}</span>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Scenario & Starting Environment */}

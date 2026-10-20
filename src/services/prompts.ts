@@ -175,6 +175,43 @@ Generate a JSON object with:
 }`;
 }
 
+export function buildHarmonizeDialoguesPrompt(profile: GranularCharacterProfile): string {
+  const narrationDesc = {
+    literary: 'Atmospheric literary prose with rich sensory details (lighting, sounds, micro-expressions, scents) and measured pacing.',
+    cinematic: 'Cinematic visual blocking with sharp camera-like framing, dynamic movement, and spatial choreography.',
+    visceral: 'Raw, visceral physiological sensations (heart rate, adrenaline, physical touch, breathing tension).',
+    conversational: 'Fast-paced, dialogue-focused exchange with witty banter and concise physical gestures.',
+  }[profile.guardrails.narrationStyle] || 'Atmospheric literary prose';
+
+  const povDesc = profile.guardrails.povPerspective === 'first_person'
+    ? 'First-person perspective as {{char}} ("I", "my")'
+    : 'Third-person perspective ("{{char}}", "he/she/they")';
+
+  return `You are an elite narrative voice director.
+Re-write the opening First Message and Example Dialogues for this character to strictly match the requested Narration Style and Story Direction.
+
+CHARACTER: ${profile.identity.name} (${profile.identity.archetype})
+PERSONALITY: ${profile.personality.coreTraits.join(', ')}. ${profile.personality.psychologicalProfile}
+SPEECH MANNERISMS: ${profile.personality.speechMannerisms}
+CURRENT SCENARIO: ${profile.scenario.environmentAndContext}
+TARGET NARRATION STYLE: ${narrationDesc}
+PERSPECTIVE: ${povDesc}
+STORY DIRECTION & GOAL: ${profile.guardrails.storyGoalAndDirection || 'Maintain engaging roleplay tension and distinct character voice.'}
+
+RULES:
+1. Physical actions and micro-expressions in asterisks (*like this*), spoken dialogue in quotes ("like this").
+2. NEVER write dialogue, thoughts, or actions for {{user}}. The first message must describe {{char}} and the sensory scene, ending with an open hook for {{user}}.
+3. Example dialogues must be structured with <START> blocks and demonstrate the character's unique voice and the selected narration style.
+
+Output ONLY a valid JSON object:
+{
+  "firstMessage": "Multi-paragraph opening scene written in the exact narration style...",
+  "casual": "<START>\\n{{user}}: \\"Casual question\\"\\n{{char}}: *Actions matching narration style.* \\"Dialogue in character voice.\\"",
+  "conflict": "<START>\\n{{user}}: \\"Challenging confrontation\\"\\n{{char}}: *Actions under pressure.* \\"Reaction in character voice.\\"",
+  "vulnerable": "<START>\\n{{user}}: \\"Personal moment\\"\\n{{char}}: *Subtle micro-expression.* \\"Emotional dialogue.\\""
+}`;
+}
+
 export function buildSandboxChatMessages(
   profile: GranularCharacterProfile,
   chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>
