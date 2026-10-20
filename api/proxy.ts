@@ -15,9 +15,11 @@ export default async function handler(req: Request) {
     });
   }
 
-  const targetUrl = req.headers.get('x-target-url');
+  const reqUrl = new URL(req.url);
+  const targetUrl = req.headers.get('x-target-url') || reqUrl.searchParams.get('url') || reqUrl.searchParams.get('target');
+
   if (!targetUrl) {
-    return new Response(JSON.stringify({ error: 'Missing x-target-url header' }), {
+    return new Response(JSON.stringify({ error: 'Missing x-target-url header or url parameter' }), {
       status: 400,
       headers: {
         'Content-Type': 'application/json',
@@ -27,9 +29,19 @@ export default async function handler(req: Request) {
   }
 
   try {
-    const forwardHeaders = new Headers(req.headers);
-    forwardHeaders.delete('host');
-    forwardHeaders.delete('x-target-url');
+    const forwardHeaders = new Headers();
+    const headersToForward = [
+      'authorization',
+      'content-type',
+      'accept',
+      'http-referer',
+      'x-title',
+      'user-agent',
+    ];
+    for (const key of headersToForward) {
+      const val = req.headers.get(key);
+      if (val) forwardHeaders.set(key, val);
+    }
 
     const body = req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined;
 

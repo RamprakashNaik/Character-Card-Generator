@@ -24,20 +24,28 @@ export function normalizeBaseUrl(url: string): string {
 }
 
 /**
- * Executes a fetch request with automatic fallback to Vite's local CORS proxy
+ * Executes a fetch request with automatic fallback to CORS proxy
  */
 async function fetchWithCorsFallback(
   targetUrl: string,
   options: RequestInit,
   forceProxy: boolean = false
 ): Promise<Response> {
-  if (forceProxy) {
+  const isCloudOllama = targetUrl.includes('ollama.com');
+  const shouldUseProxy = forceProxy || isCloudOllama;
+
+  const doProxyFetch = async () => {
     const proxyHeaders = new Headers(options.headers || {});
     proxyHeaders.set('x-target-url', targetUrl);
-    return fetch('/api/proxy', {
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+    return fetch(proxyUrl, {
       ...options,
       headers: proxyHeaders,
     });
+  };
+
+  if (shouldUseProxy) {
+    return doProxyFetch();
   }
 
   try {
@@ -46,21 +54,14 @@ async function fetchWithCorsFallback(
   } catch (err: any) {
     if (err.name === 'AbortError') throw err;
 
-    // Automatic fallback: If browser blocked due to CORS (TypeError: Failed to fetch)
-    if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+    // Automatic fallback: If browser blocked due to CORS or network security (TypeError)
+    if (err.name === 'TypeError') {
       try {
-        const proxyHeaders = new Headers(options.headers || {});
-        proxyHeaders.set('x-target-url', targetUrl);
-        const proxyRes = await fetch('/api/proxy', {
-          ...options,
-          headers: proxyHeaders,
-        });
-        return proxyRes;
+        return await doProxyFetch();
       } catch (proxyErr: any) {
         if (proxyErr.name === 'AbortError') throw proxyErr;
-        // If even the proxy failed, the target server itself is down or unreachable
         throw new AIClientError(
-          `Unable to connect to ${targetUrl}. Ensure your local server (LM Studio / Ollama) is started and listening on this port.`
+          `Unable to connect to ${targetUrl}. If using a local server, ensure CORS is enabled. If using Ollama Cloud, ensure the proxy is deployed.`
         );
       }
     }

@@ -25,11 +25,12 @@ function corsProxyPlugin(): Plugin {
           return;
         }
 
-        const targetUrlStr = req.headers['x-target-url'] as string;
+        const reqUrl = new URL(req.url || '', 'http://localhost');
+        const targetUrlStr = (req.headers['x-target-url'] as string) || reqUrl.searchParams.get('url') || reqUrl.searchParams.get('target');
         if (!targetUrlStr) {
           res.statusCode = 400;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Missing x-target-url header' }));
+          res.end(JSON.stringify({ error: 'Missing x-target-url header or url parameter' }));
           return;
         }
 
