@@ -142,35 +142,86 @@ JSON SCHEMA:
 export function buildLanguageDirectives(params: {
   text?: string;
   currentDialect?: string;
-  povPerspective?: 'first_person' | 'third_person';
+  povPerspective?: 'first_person' | 'third_person' | 'user_perspective';
   gender?: string;
 }): string {
   const combinedText = params.text || '';
   const isHinglish =
     /\b(hinglish|hindi|urdu)\b/i.test(combinedText) || params.currentDialect === 'hinglish';
 
-  if (!isHinglish) return '';
-
-  const wantsFirstPerson =
-    params.povPerspective === 'first_person' ||
-    /\b(1st person|first person|first-person|1st-person|main|mera|mujhe|as me|in 1st)\b/i.test(combinedText);
-
   const isFemale = /\b(female|woman|girl|she|her)\b/i.test(params.gender || '');
 
+  // Detect perspective intent
+  const wantsUserPerspective =
+    params.povPerspective === 'user_perspective' ||
+    /\b(user perspective|user pov|user's perspective|tum perspective|aap perspective|second person|2nd person|from user|from my perspective|facing user|tum\/aap|tum\/you)\b/i.test(
+      combinedText
+    ) ||
+    (/\buser\b/i.test(combinedText) && /\b(perspective|pov)\b/i.test(combinedText));
+
+  const wantsFirstPerson =
+    !wantsUserPerspective &&
+    (params.povPerspective === 'first_person' ||
+      /\b(1st person|first person|first-person|1st-person|char perspective|char pov|main|mera|mujhe|as me|in 1st)\b/i.test(
+        combinedText
+      ));
+
+  if (!isHinglish) {
+    if (wantsUserPerspective) {
+      return `
+*** NARRATIVE PERSPECTIVE MANDATE: USER PERSPECTIVE (SECOND-PERSON / YOU) ***
+- The scene and roleplay MUST be experienced and narrated from the USER'S PERSPECTIVE ("You / Your").
+- Frame all actions, spatial movement, and proximity around {{user}} (e.g. *He steps towards you, looking into your eyes.*).
+- The character {{char}} is referred to in third-person (He/She/They or by name).
+- CRITICAL: {{char}} MUST NEVER narrate actions as "I" or "my" (DO NOT write "*I walk forward...*").
+- Spoken dialogue inside double quotes MUST directly address {{user}} as "you".
+`;
+    }
+    if (wantsFirstPerson) {
+      return `
+*** NARRATIVE PERSPECTIVE MANDATE: CHARACTER FIRST-PERSON (I / ME) ***
+- {{char}} writes and narrates physical actions and internal thoughts in the FIRST PERSON ("I", "my", "me", e.g. *I step forward and glance at {{user}}.*).
+`;
+    }
+    return '';
+  }
+
   let povSection = '';
-  if (wantsFirstPerson) {
+  if (wantsUserPerspective) {
+    povSection = `
+USER PERSPECTIVE / SECOND-PERSON ("TUM / AAP / YOU") MANDATE:
+- The scene and roleplay MUST be experienced and narrated from the USER'S PERSPECTIVE ("Tum / Aap / You").
+- Frame all actions, spatial movement, and proximity relative to {{user}}:
+  * Use phrases such as "tumhare samne", "tumhare kareeb", "tumhari taraf", "tumhari aankhon mein", "tumse baat karte hue".
+- The character {{char}} is referred to as "Wo" or by their name {{char}} (${
+      isFemale ? 'e.g. "Wo aage badhti hai", "Usne kaha"' : 'e.g. "Wo aage badhta hai", "Usne kaha"'
+    }).
+- CRITICAL: {{char}} MUST NEVER narrate physical actions as "Main / Mera / Mujhe" (e.g. DO NOT write "*Main thoda aage badhta hoon...*").
+- Spoken dialogue inside double quotes MUST directly address {{user}} in natural, modern conversational Hinglish ("Tum / Aap", e.g. "Tum yahan kya kar rahe ho?", "Tumhe lagta hai tum bach jaoge?").
+- Example (${isFemale ? 'Female Character' : 'Male Character'} User-Centric Narration):
+  ${
+    isFemale
+      ? '*Wo dheere se kadam badha kar bilkul tumhare samne aakar khadi hoti hai. Uski gehri aankhein seedha tumhari aankhon mein dekhti hain, aur uske chehre par ek halki si muskaan aati hai.* "Arre yaar, tumhe kya laga tha? Tum akele sab sambhal loge? Bolo, ab kya plan hai tumhara?"'
+      : '*Wo dheere se kadam badha kar bilkul tumhare samne aakar khada hota hai. Uski gehri aankhein seedha tumhari aankhon mein dekhti hain, aur uske chehre par ek halki si muskaan aati hai.* "Arre yaar, tumhe kya laga tha? Tum akele sab sambhal loge? Bolo, ab kya plan hai tumhara?"'
+  }
+`;
+  } else if (wantsFirstPerson) {
     povSection = `
 FIRST-PERSON PERSPECTIVE ("MAIN / MERA / MUJHE / MAINE") MANDATE:
 - The character MUST write and narrate in the FIRST-PERSON ("Main", "Mera", "Mujhe", "Maine").
 - NEVER use third-person words like "Wo dekhta hai", "Usne kaha", "{{char}} dekhti hai", or English "He/She looks".
 - Physical actions and thoughts inside asterisks (*...*) MUST use 1st-person Hinglish:
-  ${isFemale
-    ? 'Example (Female 1st Person): *Main thoda aage badhti hoon aur ek gehri saans lekar seedha {{user}} ki taraf dekhti hoon.* "Arre yaar, mujhe laga tum nahi aaoge..."'
-    : 'Example (Male 1st Person): *Main thoda aage badhta hoon aur ek gehri saans lekar seedha {{user}} ki taraf dekhta hoon.* "Arre yaar, mujhe laga tum nahi aaoge..."'}
+  ${
+    isFemale
+      ? 'Example (Female 1st Person): *Main thoda aage badhti hoon aur ek gehri saans lekar seedha {{user}} ki taraf dekhti hoon.* "Arre yaar, mujhe laga tum nahi aaoge..."'
+      : 'Example (Male 1st Person): *Main thoda aage badhta hoon aur ek gehri saans lekar seedha {{user}} ki taraf dekhta hoon.* "Arre yaar, mujhe laga tum nahi aaoge..."'
+  }
 - Correct verb endings:
-  ${isFemale
-    ? 'Use female 1st-person verbs: "karti hoon", "sochti hoon", "dekh rahi hoon", "maine socha", "mera mann tha".'
-    : 'Use male 1st-person verbs: "karta hoon", "sochta hoon", "dekh raha hoon", "maine socha", "mera mann tha".'}
+  ${
+    isFemale
+      ? 'Use female 1st-person verbs: "karti hoon", "sochti hoon", "dekh rahi hoon", "maine socha", "mera mann tha".'
+      : 'Use male 1st-person verbs: "karta hoon", "sochta hoon", "dekh raha hoon", "maine socha", "mera mann tha".'
+  }
 `;
   } else {
     povSection = `
@@ -199,7 +250,7 @@ export function buildSectionRefinePrompt(params: {
   currentContent: string;
   userInstruction: string;
   languageDialect?: string;
-  povPerspective?: 'first_person' | 'third_person';
+  povPerspective?: 'first_person' | 'third_person' | 'user_perspective';
   gender?: string;
 }): string {
   const langRule = buildLanguageDirectives({
@@ -251,15 +302,22 @@ export function buildHarmonizeDialoguesPrompt(profile: GranularCharacterProfile)
   }[profile.guardrails.narrationStyle] || 'Atmospheric literary prose';
 
   const isHinglish = profile.guardrails.languageDialect === 'hinglish';
-  const isFirstPerson = profile.guardrails.povPerspective === 'first_person';
+  const pov = profile.guardrails.povPerspective;
 
-  const povDesc = isFirstPerson
-    ? isHinglish
-      ? 'First-person perspective in Hinglish ("Main", "Mera", "Mujhe", "Maine", e.g. *Main thoda aage badhta hoon aur muskurata hoon.*)'
-      : 'First-person perspective as {{char}} ("I", "my")'
-    : isHinglish
+  let povDesc = '';
+  if (pov === 'user_perspective') {
+    povDesc = isHinglish
+      ? 'User-centric perspective in Hinglish (framed around {{user}} as "Tum / Aap", e.g. *Wo dheere se tumhare samne aakar khada hota hai.* {{char}} is "Wo", NEVER narrate as "Main".)'
+      : 'User-centric perspective framed around {{user}} ("you", e.g. *He steps towards you, meeting your eyes.* {{char}} is third-person, never "I".)';
+  } else if (pov === 'first_person') {
+    povDesc = isHinglish
+      ? 'Character first-person perspective in Hinglish ("Main", "Mera", "Mujhe", "Maine", e.g. *Main thoda aage badhta hoon aur muskurata hoon.*)'
+      : 'Character first-person perspective as {{char}} ("I", "my")';
+  } else {
+    povDesc = isHinglish
       ? 'Third-person perspective in Hinglish ("{{char}}", "Wo", "Usne", e.g. *{{char}} thoda aage badhta hai.*)'
-      : 'Third-person perspective ("{{char}}", "he/she/they");';
+      : 'Third-person perspective ("{{char}}", "he/she/they")';
+  }
 
   return `You are an elite narrative voice director.
 Re-write the opening First Message and Example Dialogues for this character to strictly match the requested Narration Style and Story Direction.
@@ -358,6 +416,7 @@ CORE RULES:
 3. Anti-Railroading: In firstMessage and dialogues, NEVER speak, think, or act for {{user}}. The opening message must end with a compelling hook for {{user}} to respond.
 4. If wardrobe or appearance changes, ensure any visual mentions in scenario and greetings stay coherent.
 5. If narration style or tone changes, harmonize the prose in scenario.firstMessage and dialogues.
+6. Perspective & Dialect: If the user requests User Perspective ("Tum / You / Aap"), update guardrails.povPerspective to "user_perspective" and frame narrative around {{user}} (never {{char}} as "Main"). If they request Character 1st-person, set povPerspective to "first_person". If 3rd-person, set to "third_person". If Hinglish is requested, update guardrails.languageDialect to "hinglish".
 
 Return ONLY a valid JSON object matching this schema:
 {

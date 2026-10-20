@@ -115,7 +115,12 @@ export const DialogueTab: React.FC = () => {
     conversational: 'Dialogue-Focused Banter',
   }[guardrails.narrationStyle] || 'Atmospheric Literary';
 
-  const povLabel = guardrails.povPerspective === 'first_person' ? '1st-Person (I)' : '3rd-Person ({{char}})';
+  const povLabel =
+    guardrails.povPerspective === 'user_perspective'
+      ? 'User Perspective (Tum / You)'
+      : guardrails.povPerspective === 'first_person'
+      ? 'Char POV (Main / I)'
+      : '3rd-Person (Wo / Char)';
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -135,7 +140,7 @@ export const DialogueTab: React.FC = () => {
       {/* Narration Voice & Alignment Banner */}
       <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Feather className="w-4 h-4 text-indigo-400" />
             <span className="text-xs font-bold text-white uppercase tracking-wider">
               Active Narration Voice:
@@ -173,21 +178,33 @@ export const DialogueTab: React.FC = () => {
             <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5">
               <button
                 type="button"
+                onClick={() => updateGuardrails({ povPerspective: 'user_perspective' })}
+                className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+                  guardrails.povPerspective === 'user_perspective'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Narrate from User's Perspective: 'Tum / Aap / You' ({{char}} is 'Wo', never 'Main')"
+              >
+                User (Tum)
+              </button>
+              <button
+                type="button"
                 onClick={() => updateGuardrails({ povPerspective: 'first_person' })}
                 className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
                   guardrails.povPerspective === 'first_person'
                     ? 'bg-purple-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Narrate in First-Person: 'Main / Mera / Mujhe / I'"
+                title="Narrate in Character First-Person: 'Main / Mera / Mujhe / I'"
               >
-                1st-Person (Main)
+                Char (Main)
               </button>
               <button
                 type="button"
                 onClick={() => updateGuardrails({ povPerspective: 'third_person' })}
                 className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
-                  guardrails.povPerspective !== 'first_person'
+                  guardrails.povPerspective === 'third_person' || (!guardrails.povPerspective)
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}

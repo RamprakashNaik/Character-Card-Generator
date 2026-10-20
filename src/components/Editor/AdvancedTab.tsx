@@ -202,10 +202,11 @@ export const AdvancedTab: React.FC = () => {
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
             Narrative Perspective (POV)
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
-              { id: 'third_person', label: 'Third-Person', hint: '{{char}} looked...' },
-              { id: 'first_person', label: 'First-Person', hint: 'I looked...' },
+              { id: 'user_perspective', label: 'User Perspective', hint: 'Around {{user}} ("Tum/You")' },
+              { id: 'first_person', label: 'Character POV', hint: '{{char}} acts as "I / Main"' },
+              { id: 'third_person', label: 'Third-Person', hint: 'Traditional ("{{char}} looked")' },
             ].map(pov => (
               <button
                 key={pov.id}

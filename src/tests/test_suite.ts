@@ -11,7 +11,10 @@ import {
   profileToV2Card,
   compileDescription,
   compilePersonality,
+  compileSystemPrompt,
+  compilePostHistoryInstructions,
 } from '../utils/formatters.ts';
+import { buildLanguageDirectives } from '../services/prompts.ts';
 import { auditCharacterProfile, autoFixMacros } from '../utils/linter.ts';
 import { estimateTokens, analyzeTokenBudget } from '../utils/tokenCounter.ts';
 import type { CharacterCardV2 } from '../types/sillytavern.ts';
@@ -115,5 +118,29 @@ assert(tokens >= 15 && tokens <= 25, `Token estimate (${tokens}) should fall wit
 const budget = analyzeTokenBudget(originalCard.data);
 assert(budget.total > 400 && budget.total < 2500, `Card total tokens (${budget.total}) should be within realistic budget`);
 console.log(`  ✔ Passed: Token estimator correctly calculated ${tokens} tokens for sample text and ${budget.total} total card tokens.\n`);
+
+// Test 5: User Perspective ("Tum / You / Aap") Verification Test
+console.log('▶ Test 5: User Perspective ("Tum / You / Aap") Verification Test');
+const userPOVProfile = createDefaultProfile();
+userPOVProfile.guardrails.languageDialect = 'hinglish';
+userPOVProfile.guardrails.povPerspective = 'user_perspective';
+
+const userPOVSystemPrompt = compileSystemPrompt(userPOVProfile);
+assert(userPOVSystemPrompt.includes('User\'s Perspective in Hinglish'), 'System prompt must mandate User\'s Perspective in Hinglish');
+assert(userPOVSystemPrompt.includes('NEVER narrate {{char}}\'s actions as "Main / Mera / Mujhe"'), 'Must strictly forbid {{char}} saying Main/Mera');
+assert(userPOVSystemPrompt.includes('tumhare kareeb'), 'Must include user-centric spatial examples');
+
+const userPOVDepthPrompt = compilePostHistoryInstructions(userPOVProfile);
+assert(userPOVDepthPrompt.includes('User Perspective Hinglish Lock'), 'Depth prompt must lock User Perspective');
+assert(userPOVDepthPrompt.includes('Do NOT narrate actions as "Main"'), 'Depth prompt must forbid Main');
+
+// Test language directive smart resolution: "the first person showing from char perspective I want from user perspective"
+const userDirective = buildLanguageDirectives({
+  text: 'the first person showing from char perspective I want from user perspective',
+  currentDialect: 'hinglish',
+});
+assert(userDirective.includes('USER PERSPECTIVE / SECOND-PERSON ("TUM / AAP / YOU") MANDATE'), 'Must resolve to USER PERSPECTIVE');
+assert(userDirective.includes('MUST NEVER narrate physical actions as "Main / Mera / Mujhe"'), 'Must forbid char Main');
+console.log('  ✔ Passed: User Perspective correctly enforces "Tum / Aap", forbids char "Main", and handles user prompt intent.\n');
 
 console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY!');

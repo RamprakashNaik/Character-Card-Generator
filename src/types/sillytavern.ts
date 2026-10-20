@@ -148,7 +148,7 @@ export interface GranularCharacterProfile {
     languageDialect?: 'english' | 'hinglish' | 'custom';
     customLanguage?: string;
     narrationStyle: 'literary' | 'cinematic' | 'conversational' | 'visceral';
-    povPerspective: 'third_person' | 'first_person';
+    povPerspective: 'third_person' | 'first_person' | 'user_perspective';
     pacingRule: 'slow_burn' | 'balanced' | 'fast_paced';
     storyGoalAndDirection: string; // Where the roleplay should steer / main objective
     preventUserImpersonation: boolean;

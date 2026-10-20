@@ -49,8 +49,12 @@ const QUICK_INSPIRATION_PRESETS = [
     instruction: 'Add deeper emotional stakes, hidden regrets, and vulnerable traits beneath their tough exterior, making them more relatable in roleplay.',
   },
   {
-    label: '1st-Person Hinglish (Main / Mera)',
-    instruction: 'Rewrite the opening First Message and all example dialogues in 100% First-Person Hinglish. All narrative actions and thoughts in asterisks must strictly use first-person ("Main dekhta hoon", "Maine socha", "Mujhe laga"), and spoken dialogue in quotes must be natural Hinglish. Never use third-person words like "Wo" or "{{char}}".',
+    label: 'User Perspective Hinglish (Tum / You)',
+    instruction: 'Rewrite the opening First Message and all example dialogues from the User\'s Perspective in natural Hinglish (Roman script). Frame all narrative actions and proximity around {{user}} ("Tum / Aap", e.g. *Wo dheere se tumhare samne aakar khada hota hai aur tumhari aankhon mein dekhta hai.*). {{char}} must be referred to as "Wo" or by name, and MUST NEVER narrate actions as "Main / Mera". All spoken dialogue must be natural Hinglish directly addressing the user.',
+  },
+  {
+    label: 'Char 1st-Person Hinglish (Main / Mera)',
+    instruction: 'Rewrite the opening First Message and all example dialogues in Character First-Person Hinglish. All narrative actions and thoughts in asterisks must strictly use character first-person ("Main dekhta hoon", "Maine socha", "Mujhe laga"), and spoken dialogue in quotes must be natural Hinglish.',
   },
   {
     label: '100% Hinglish Voice & Storytelling',

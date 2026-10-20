@@ -263,7 +263,11 @@ export function compileSystemPrompt(profile: GranularCharacterProfile): string {
   const directives: string[] = [];
 
   // 1. Perspective & Format
-  if (profile.guardrails.povPerspective === 'first_person') {
+  if (profile.guardrails.povPerspective === 'user_perspective') {
+    directives.push(
+      `Write from the user-centric perspective ("You / Tum / Aap"), framing all scenes and physical interactions around {{user}}. Describe {{char}} interacting with {{user}} (e.g. approaching you, locking eyes with you). Never narrate {{char}}'s actions as "I / Main".`
+    );
+  } else if (profile.guardrails.povPerspective === 'first_person') {
     directives.push(`Write in the first-person perspective as {{char}} ("I looked", "my hands").`);
   } else {
     directives.push(
@@ -302,7 +306,11 @@ export function compileSystemPrompt(profile: GranularCharacterProfile): string {
 
   // Language & Dialect Enforcement
   if (profile.guardrails.languageDialect === 'hinglish') {
-    if (profile.guardrails.povPerspective === 'first_person') {
+    if (profile.guardrails.povPerspective === 'user_perspective') {
+      directives.push(
+        `[CRITICAL LANGUAGE & POV MANDATE: Narrate strictly from the User's Perspective in Hinglish (Roman alphabet). Frame all actions around {{user}} as "Tum / Aap" (e.g. *Wo dheere se tumhare kareeb aakar khada hota hai aur tumhari aankhon mein dekhta hai.*). {{char}} is referred to as "Wo" or by name. NEVER narrate {{char}}'s actions as "Main / Mera / Mujhe". Spoken dialogue in quotes must directly address {{user}} in natural Hinglish.]`
+      );
+    } else if (profile.guardrails.povPerspective === 'first_person') {
       directives.push(
         `[CRITICAL LANGUAGE & POV MANDATE: Strictly speak and narrate in the First-Person in Hinglish ("Main", "Mera", "Mujhe", "Maine") using the Latin/Roman alphabet. Physical actions and internal thoughts inside asterisks must be in 1st-person Hinglish (e.g. *Main aage badhta hoon aur muskura kar dekhta hoon.*). Never use 3rd-person pronouns ("wo", "{{char}} dekhta hai") or pure English.]`
       );
@@ -345,7 +353,11 @@ export function compilePostHistoryInstructions(profile: GranularCharacterProfile
 
   // Language Lock
   if (profile.guardrails.languageDialect === 'hinglish') {
-    if (profile.guardrails.povPerspective === 'first_person') {
+    if (profile.guardrails.povPerspective === 'user_perspective') {
+      instructions.push(
+        `[User Perspective Hinglish Lock: Narrate around {{user}} ("Tum/Aap"). {{char}} is "Wo". Do NOT narrate actions as "Main". Keep 100% natural Hinglish.]`
+      );
+    } else if (profile.guardrails.povPerspective === 'first_person') {
       instructions.push(
         `[1st-Person Hinglish Lock: Narrate strictly in 1st-Person Hinglish using "Main" / "Mera" (*Main dekhta hoon*). Never switch to 3rd-person or pure English.]`
       );
