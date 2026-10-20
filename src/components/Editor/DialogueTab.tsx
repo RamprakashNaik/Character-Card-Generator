@@ -117,7 +117,7 @@ export const DialogueTab: React.FC = () => {
 
   const povLabel =
     guardrails.povPerspective === 'user_perspective'
-      ? 'User Perspective (Tum / You)'
+      ? 'User POV (Mere / Me)'
       : guardrails.povPerspective === 'first_person'
       ? 'Char POV (Main / I)'
       : '3rd-Person (Wo / Char)';
@@ -184,9 +184,9 @@ export const DialogueTab: React.FC = () => {
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Narrate from User's Perspective: 'Tum / Aap / You' ({{char}} is 'Wo', never 'Main')"
+                title="Narrate from User's Perspective: 'Mere / Mujhe / Me' ({{char}} is 'Wo', never 'Main')"
               >
-                User (Tum)
+                User (Mere)
               </button>
               <button
                 type="button"

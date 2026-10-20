@@ -154,10 +154,11 @@ export function buildLanguageDirectives(params: {
   // Detect perspective intent
   const wantsUserPerspective =
     params.povPerspective === 'user_perspective' ||
-    /\b(user perspective|user pov|user's perspective|tum perspective|aap perspective|second person|2nd person|from user|from my perspective|facing user|tum\/aap|tum\/you)\b/i.test(
+    /\b(user perspective|user pov|user's perspective|mere samne|meri aankhon|mere paas|from user|from my perspective|user 1st person|first person user|user first person|tum\/aap|tum\/you)\b/i.test(
       combinedText
     ) ||
-    (/\buser\b/i.test(combinedText) && /\b(perspective|pov)\b/i.test(combinedText));
+    (/\buser\b/i.test(combinedText) && /\b(perspective|pov|first person|1st person)\b/i.test(combinedText)) ||
+    (/\bfirst person\b/i.test(combinedText) && /\b(user|mere|mere samne)\b/i.test(combinedText));
 
   const wantsFirstPerson =
     !wantsUserPerspective &&
@@ -169,11 +170,10 @@ export function buildLanguageDirectives(params: {
   if (!isHinglish) {
     if (wantsUserPerspective) {
       return `
-*** NARRATIVE PERSPECTIVE MANDATE: USER PERSPECTIVE (SECOND-PERSON / YOU) ***
-- The scene and roleplay MUST be experienced and narrated from the USER'S PERSPECTIVE ("You / Your").
-- Frame all actions, spatial movement, and proximity around {{user}} (e.g. *He steps towards you, looking into your eyes.*).
-- The character {{char}} is referred to in third-person (He/She/They or by name).
-- CRITICAL: {{char}} MUST NEVER narrate actions as "I" or "my" (DO NOT write "*I walk forward...*").
+*** NARRATIVE PERSPECTIVE MANDATE: USER FIRST-PERSON POV ("ME / MY") ***
+- The scene and roleplay narration inside asterisks (*...*) MUST be narrated from {{user}}'s first-person eyes ("me / my"):
+  * Frame {{char}}'s actions towards me (e.g. *He steps slowly until he is standing right in front of me, his eyes locking onto mine.*).
+- {{char}} is referred to as "He / She / They" or by name (never "I").
 - Spoken dialogue inside double quotes MUST directly address {{user}} as "you".
 `;
     }
@@ -189,21 +189,20 @@ export function buildLanguageDirectives(params: {
   let povSection = '';
   if (wantsUserPerspective) {
     povSection = `
-USER PERSPECTIVE / SECOND-PERSON ("TUM / AAP / YOU") MANDATE:
-- The scene and roleplay MUST be experienced and narrated from the USER'S PERSPECTIVE ("Tum / Aap / You").
-- Frame all actions, spatial movement, and proximity relative to {{user}}:
-  * Use phrases such as "tumhare samne", "tumhare kareeb", "tumhari taraf", "tumhari aankhon mein", "tumse baat karte hue".
-- The character {{char}} is referred to as "Wo" or by their name {{char}} (${
-      isFemale ? 'e.g. "Wo aage badhti hai", "Usne kaha"' : 'e.g. "Wo aage badhta hai", "Usne kaha"'
-    }).
-- CRITICAL: {{char}} MUST NEVER narrate physical actions as "Main / Mera / Mujhe" (e.g. DO NOT write "*Main thoda aage badhta hoon...*").
+USER PERSPECTIVE (FIRST-PERSON FROM USER'S POINT OF VIEW - "MERE / MUJHE / MERI") MANDATE:
+- The scene and roleplay narration inside asterisks (*...*) MUST be written from {{user}}'s first-person vantage point using "Mere / Mujhe / Meri" ("in front of me / towards me").
+- Frame {{char}}'s actions and proximity relative to ME (the user):
+  * Use phrases such as: "bilkul mere samne aakar khada ho jata hai", "mere kareeb aata hai", "meri aankhon mein dekhta hai", "meri taraf aage badhta hai", "mujhse kehta hai".
+- The character {{char}} is referred to in narration as "Wo" or by name (e.g. "Wo dheere se chalte hue bilkul mere samne aakar ${isFemale ? 'khadi ho jati hai' : 'khada ho jata hai'}").
+- CRITICAL: {{char}} MUST NEVER narrate physical actions as their own "Main / Mera / Mujhe" (e.g. DO NOT write "*Main aage badhta hoon...*"). The "mere / mujhe" always refers to the user!
 - Spoken dialogue inside double quotes MUST directly address {{user}} in natural, modern conversational Hinglish ("Tum / Aap", e.g. "Tum yahan kya kar rahe ho?", "Tumhe lagta hai tum bach jaoge?").
-- Example (${isFemale ? 'Female Character' : 'Male Character'} User-Centric Narration):
+- EXACT EXAMPLE FORMAT (User-Perspective 1st-Person):
   ${
     isFemale
-      ? '*Wo dheere se kadam badha kar bilkul tumhare samne aakar khadi hoti hai. Uski gehri aankhein seedha tumhari aankhon mein dekhti hain, aur uske chehre par ek halki si muskaan aati hai.* "Arre yaar, tumhe kya laga tha? Tum akele sab sambhal loge? Bolo, ab kya plan hai tumhara?"'
-      : '*Wo dheere se kadam badha kar bilkul tumhare samne aakar khada hota hai. Uski gehri aankhein seedha tumhari aankhon mein dekhti hain, aur uske chehre par ek halki si muskaan aati hai.* "Arre yaar, tumhe kya laga tha? Tum akele sab sambhal loge? Bolo, ab kya plan hai tumhara?"'
+      ? '*Halki baarish ki boondein gir rahi hain aur gali mein bilkul sannata hai. Achanak peeche se kadmon ki aahat aati hai. Wo dheere se chalte hue bilkul mere samne aakar khadi ho jati hai. Uski gehri aankhein seedha meri aankhon mein dekhti hain, aur uske chehre par ek halki si muskaan aati hai.* "Arre yaar, tumhe kya laga tha? Tum akele yahan aaoge aur mujhe pata nahi chalega? Bolo, ab kya plan hai tumhara?"'
+      : '*Halki baarish ki boondein gir rahi hain aur gali mein bilkul sannata hai. Achanak peeche se kadmon ki aahat aati hai. Wo dheere se chalte hue bilkul mere samne aakar khada ho jata hai. Uski gehri aankhein seedha meri aankhon mein dekhti hain, aur uske chehre par ek halki si muskaan aati hai.* "Arre yaar, tumhe kya laga tha? Tum akele yahan aaoge aur mujhe pata nahi chalega? Bolo, ab kya plan hai tumhara?"'
   }
+- ANTI-RAILROADING: Narrate what {{char}} does relative to me ("mere samne khada hota hai"). DO NOT force {{user}}'s internal feelings or spoken words.
 `;
   } else if (wantsFirstPerson) {
     povSection = `
@@ -307,8 +306,8 @@ export function buildHarmonizeDialoguesPrompt(profile: GranularCharacterProfile)
   let povDesc = '';
   if (pov === 'user_perspective') {
     povDesc = isHinglish
-      ? 'User-centric perspective in Hinglish (framed around {{user}} as "Tum / Aap", e.g. *Wo dheere se tumhare samne aakar khada hota hai.* {{char}} is "Wo", NEVER narrate as "Main".)'
-      : 'User-centric perspective framed around {{user}} ("you", e.g. *He steps towards you, meeting your eyes.* {{char}} is third-person, never "I".)';
+      ? 'First-person from User perspective in Hinglish (narration from user\'s eyes using "mere / meri / mujhe", e.g. *Wo dheere se chalte hue bilkul mere samne aakar khada ho jata hai.* {{char}} is "Wo", dialogue addresses user as "Tum".)'
+      : 'First-person from User perspective (narration from user\'s eyes using "me / my", e.g. *He steps until he is standing right in front of me.* {{char}} is third-person "he/she", dialogue addresses user as "you".)';
   } else if (pov === 'first_person') {
     povDesc = isHinglish
       ? 'Character first-person perspective in Hinglish ("Main", "Mera", "Mujhe", "Maine", e.g. *Main thoda aage badhta hoon aur muskurata hoon.*)'

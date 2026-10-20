@@ -204,7 +204,7 @@ export const AdvancedTab: React.FC = () => {
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
-              { id: 'user_perspective', label: 'User Perspective', hint: 'Around {{user}} ("Tum/You")' },
+              { id: 'user_perspective', label: 'User POV (Mere / Me)', hint: 'From user\'s eyes ("mere samne")' },
               { id: 'first_person', label: 'Character POV', hint: '{{char}} acts as "I / Main"' },
               { id: 'third_person', label: 'Third-Person', hint: 'Traditional ("{{char}} looked")' },
             ].map(pov => (

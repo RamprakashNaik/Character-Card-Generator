@@ -265,7 +265,7 @@ export function compileSystemPrompt(profile: GranularCharacterProfile): string {
   // 1. Perspective & Format
   if (profile.guardrails.povPerspective === 'user_perspective') {
     directives.push(
-      `Write from the user-centric perspective ("You / Tum / Aap"), framing all scenes and physical interactions around {{user}}. Describe {{char}} interacting with {{user}} (e.g. approaching you, locking eyes with you). Never narrate {{char}}'s actions as "I / Main".`
+      `Write narrative descriptions from the first-person perspective of {{user}} ("me / my / mere"), describing {{char}} interacting with {{user}} (e.g. *He steps slowly until he is standing right in front of me.*). In spoken dialogue, {{char}} speaks directly to {{user}} as "you / tum".`
     );
   } else if (profile.guardrails.povPerspective === 'first_person') {
     directives.push(`Write in the first-person perspective as {{char}} ("I looked", "my hands").`);
@@ -308,7 +308,7 @@ export function compileSystemPrompt(profile: GranularCharacterProfile): string {
   if (profile.guardrails.languageDialect === 'hinglish') {
     if (profile.guardrails.povPerspective === 'user_perspective') {
       directives.push(
-        `[CRITICAL LANGUAGE & POV MANDATE: Narrate strictly from the User's Perspective in Hinglish (Roman alphabet). Frame all actions around {{user}} as "Tum / Aap" (e.g. *Wo dheere se tumhare kareeb aakar khada hota hai aur tumhari aankhon mein dekhta hai.*). {{char}} is referred to as "Wo" or by name. NEVER narrate {{char}}'s actions as "Main / Mera / Mujhe". Spoken dialogue in quotes must directly address {{user}} in natural Hinglish.]`
+        `[CRITICAL LANGUAGE & POV MANDATE: Narrate strictly from the User's Perspective in Hinglish (Roman alphabet). Narration actions in asterisks are experienced through {{user}}'s eyes using "mere / meri / mujhe" (e.g. *Wo dheere se chalte hue bilkul mere samne aakar khada ho jata hai aur meri aankhon mein dekhta hai.*). {{char}} is referred to as "Wo" or by name. Spoken dialogue in quotes must directly address {{user}} as "Tum / Aap" in natural Hinglish.]`
       );
     } else if (profile.guardrails.povPerspective === 'first_person') {
       directives.push(
@@ -355,7 +355,7 @@ export function compilePostHistoryInstructions(profile: GranularCharacterProfile
   if (profile.guardrails.languageDialect === 'hinglish') {
     if (profile.guardrails.povPerspective === 'user_perspective') {
       instructions.push(
-        `[User Perspective Hinglish Lock: Narrate around {{user}} ("Tum/Aap"). {{char}} is "Wo". Do NOT narrate actions as "Main". Keep 100% natural Hinglish.]`
+        `[User POV Hinglish Lock: Narrate from user's perspective (*Wo bilkul mere samne aakar khada hota hai*). {{char}} is "Wo". {{char}} speaks to user as "Tum". Keep 100% natural Hinglish.]`
       );
     } else if (profile.guardrails.povPerspective === 'first_person') {
       instructions.push(

@@ -49,8 +49,8 @@ const QUICK_INSPIRATION_PRESETS = [
     instruction: 'Add deeper emotional stakes, hidden regrets, and vulnerable traits beneath their tough exterior, making them more relatable in roleplay.',
   },
   {
-    label: 'User Perspective Hinglish (Tum / You)',
-    instruction: 'Rewrite the opening First Message and all example dialogues from the User\'s Perspective in natural Hinglish (Roman script). Frame all narrative actions and proximity around {{user}} ("Tum / Aap", e.g. *Wo dheere se tumhare samne aakar khada hota hai aur tumhari aankhon mein dekhta hai.*). {{char}} must be referred to as "Wo" or by name, and MUST NEVER narrate actions as "Main / Mera". All spoken dialogue must be natural Hinglish directly addressing the user.',
+    label: 'User Perspective Hinglish (Mere Samne)',
+    instruction: 'Rewrite the opening First Message and all example dialogues from the User\'s Perspective in natural Hinglish (Roman script). Narration inside asterisks must be written through {{user}}\'s first-person eyes using "mere / meri / mujhe" (e.g. *Halki baarish ki boondein gir rahi hain aur gali mein bilkul sannata hai. Achanak peeche se kadmon ki aahat aati hai. Wo dheere se chalte hue bilkul mere samne aakar khada ho jata hai aur meri aankhon mein dekhta hai.*). {{char}} is referred to as "Wo" and speaks to {{user}} as "Tum / Aap" in dialogue.',
   },
   {
     label: 'Char 1st-Person Hinglish (Main / Mera)',
