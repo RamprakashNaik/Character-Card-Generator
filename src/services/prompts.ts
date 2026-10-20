@@ -13,22 +13,48 @@ Your specialty is crafting deeply immersive, psychologically compelling roleplay
 4. CONTEXT ECONOMY: Lean, powerful descriptions avoiding generic filler prose.
 Always respond with valid JSON when requested.`;
 
+export function buildDeduceContextPrompt(baseIdea: string): string {
+  return `You are a master narrative architect. Analyze this character concept:
+"${baseIdea}"
+
+Autonomously deduce the optimal:
+1. Setting / Genre (e.g. "Steampunk Fantasy", "Cyberpunk Dystopia", "Gothic Victorian", "Sci-Fi Space Opera")
+2. Tone / Atmosphere (e.g. "Gritty & Wry", "Melancholy & Haunting", "High-Stakes & Tense", "Whimsical & Adventurous")
+3. Dynamic with {{user}} (e.g. "Reluctant Allies", "Rivals with unspoken respect", "Informant and Handler", "Master and Apprentice")
+
+Respond ONLY with a valid JSON object:
+{
+  "genre": "...",
+  "tone": "...",
+  "userDynamic": "..."
+}`;
+}
+
 export function buildFullCardPrompt(params: {
   baseIdea: string;
   genre?: string;
   tone?: string;
   userDynamic?: string;
 }): string {
+  const hasGenre = params.genre && params.genre.trim() && params.genre !== 'Auto-detected by AI';
+  const hasTone = params.tone && params.tone.trim() && params.tone !== 'Auto-detected by AI';
+  const hasDynamic = params.userDynamic && params.userDynamic.trim() && params.userDynamic !== 'Auto-detected by AI';
+
   return `Please design an elite, cohesive SillyTavern V2 character card based on this core concept:
 BASE IDEA: "${params.baseIdea}"
-${params.genre ? `GENRE / SETTING: ${params.genre}` : ''}
-${params.tone ? `TONE / MOOD: ${params.tone}` : ''}
-${params.userDynamic ? `RELATIONSHIP WITH {{user}}: ${params.userDynamic}` : ''}
+${hasGenre ? `GENRE / SETTING: ${params.genre}` : 'GENRE / SETTING: Autonomously deduce the most atmospheric, compelling setting and genre from the base idea.'}
+${hasTone ? `TONE / MOOD: ${params.tone}` : 'TONE / MOOD: Autonomously deduce the most emotionally engaging tone and narrative mood from the base idea.'}
+${hasDynamic ? `RELATIONSHIP WITH {{user}}: ${params.userDynamic}` : 'RELATIONSHIP WITH {{user}}: Autonomously craft a rich, dynamic, tension-filled or intriguing relationship with {{user}} that naturally invites roleplay.'}
 
 Generate a complete, deeply detailed JSON object with the exact schema below. Do not wrap in markdown quotes if possible, or output only valid JSON.
 
 JSON SCHEMA:
 {
+  "inferredContext": {
+    "genre": "Deduced genre / setting",
+    "tone": "Deduced mood / atmosphere",
+    "userDynamic": "Deduced dynamic with {{user}}"
+  },
   "identity": {
     "name": "Full name",
     "nickname": "Title, alias or nickname",
@@ -36,7 +62,7 @@ JSON SCHEMA:
     "gender": "Gender",
     "species": "Species or race",
     "archetype": "Concise role archetype",
-    "tags": ["3-6 relevant tags"]
+    "tags": ["3-6 relevant tags including genre and archetype"]
   },
   "appearance": {
     "heightAndBuild": "Detailed height, frame, body type, and posture",

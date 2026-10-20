@@ -2,20 +2,25 @@ import React, { useState } from 'react';
 import { useCardStore } from '../../store/useCardStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { streamChatCompletion } from '../../services/aiClient';
-import { SYSTEM_ROLE_ARCHITECT, buildFullCardPrompt } from '../../services/prompts';
+import {
+  SYSTEM_ROLE_ARCHITECT,
+  buildFullCardPrompt,
+  buildDeduceContextPrompt,
+} from '../../services/prompts';
 import { GranularCharacterProfile } from '../../types/sillytavern';
 import {
   Sparkles,
   X,
-  Wand2,
   AlertCircle,
-  CheckCircle2,
-  Compass,
-  Smile,
-  Shield,
-  Loader2,
   Flame,
-  Zap,
+  Loader2,
+  Globe,
+  Smile,
+  Users,
+  ChevronDown,
+  ChevronUp,
+  Wand2,
+  Check,
 } from 'lucide-react';
 
 interface IdeaWizardModalProps {
@@ -33,23 +38,23 @@ const PRESET_IDEAS = [
   },
   {
     title: 'Cyberpunk Bio-Hacker',
-    genre: 'Cyberpunk',
+    genre: 'Cyberpunk Dystopia',
     tone: 'Dark & High Stakes',
-    dynamic: 'Informant / Client',
+    dynamic: 'Informant & Client',
     idea: 'A neon-drenched street bio-hacker who illegally modifies synthetic organs in the undercity sewers, pursued by megacorp assassins for stealing an AI core.',
   },
   {
     title: 'Tsundere Royal Inquisitor',
-    genre: 'High Fantasy',
+    genre: 'High Fantasy / Court Intrigue',
     tone: 'Dramatic & Sharp',
-    dynamic: 'Rivalry / Captor',
+    dynamic: 'Rivalry / Captor and Captive',
     idea: 'A haughty high-elf inquisitor wielding solar magic who arrests {{user}} on suspicion of heresy, but secretly suspects her superiors are corrupted by shadow demons.',
   },
   {
     title: 'Sentient Android Butler',
-    genre: 'Sci-Fi Mystery',
+    genre: 'Sci-Fi Gothic Mystery',
     tone: 'Polite & Eerie',
-    dynamic: 'Master / Protector',
+    dynamic: 'Master & Protector',
     idea: 'An antique humanoid android who serves as the estate steward on a remote terraforming colony, observing humans with polite fascination while hiding a glitching consciousness.',
   },
 ];
@@ -59,9 +64,12 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
   const { settings } = useSettingsStore();
 
   const [baseIdea, setBaseIdea] = useState('');
-  const [genre, setGenre] = useState('Fantasy');
-  const [tone, setTone] = useState('Grounded & Immersive');
-  const [dynamic, setDynamic] = useState('Stranger meeting for the first time');
+  const [genre, setGenre] = useState('');
+  const [tone, setTone] = useState('');
+  const [dynamic, setDynamic] = useState('');
+  const [isDetectingContext, setIsDetectingContext] = useState(false);
+  const [showManualOverride, setShowManualOverride] = useState(false);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState('');
   const [rawOutput, setRawOutput] = useState('');
@@ -74,6 +82,51 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
     setGenre(p.genre);
     setTone(p.tone);
     setDynamic(p.dynamic);
+  };
+
+  // Automatically infer Setting, Tone, and Dynamic with {{user}} from the base idea
+  const handleAutoDetectContext = async () => {
+    if (!baseIdea.trim()) {
+      setError('Please provide a character concept / base idea first.');
+      return;
+    }
+
+    if (!settings.baseUrl) {
+      setError('AI Base URL is not configured. Please open Settings.');
+      return;
+    }
+
+    setIsDetectingContext(true);
+    setError(null);
+
+    const prompt = buildDeduceContextPrompt(baseIdea);
+    let accumulated = '';
+
+    try {
+      await streamChatCompletion(
+        settings,
+        [
+          { role: 'system', content: 'You are an expert story architect. Respond only with JSON.' },
+          { role: 'user', content: prompt },
+        ],
+        chunk => {
+          accumulated += chunk;
+        }
+      );
+
+      let jsonStr = accumulated.trim();
+      const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (match) jsonStr = match[1];
+
+      const parsed = JSON.parse(jsonStr);
+      if (parsed.genre) setGenre(parsed.genre);
+      if (parsed.tone) setTone(parsed.tone);
+      if (parsed.userDynamic) setDynamic(parsed.userDynamic);
+    } catch (err: any) {
+      console.warn('Auto-detect context error:', err);
+    } finally {
+      setIsDetectingContext(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -94,15 +147,15 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
 
     const prompt = buildFullCardPrompt({
       baseIdea,
-      genre,
-      tone,
-      userDynamic: dynamic,
+      genre: genre || undefined,
+      tone: tone || undefined,
+      userDynamic: dynamic || undefined,
     });
 
     let accumulated = '';
 
     try {
-      setGenerationStep('Designing Identity, Demographics & Visual Appearance...');
+      setGenerationStep('Auto-generating Setting, Tone & Visual Appearance...');
 
       await streamChatCompletion(
         settings,
@@ -132,13 +185,17 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
 
       // Parse JSON from output
       let jsonStr = accumulated.trim();
-      // Strip markdown code fences if model wrapped response in ```json ... ```
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         jsonStr = jsonMatch[1];
       }
 
       const parsed = JSON.parse(jsonStr);
+
+      // Collect inferred context
+      const inferredGenre = parsed.inferredContext?.genre || genre || 'Original';
+      const inferredTone = parsed.inferredContext?.tone || tone || 'Immersive';
+      const inferredDynamic = parsed.inferredContext?.userDynamic || dynamic || 'Stranger';
 
       // Create full granular profile
       const newProfile: GranularCharacterProfile = {
@@ -151,7 +208,9 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
           archetype: parsed.identity?.archetype || 'Adventurer',
           creator: '',
           version: '1.0',
-          tags: Array.isArray(parsed.identity?.tags) ? parsed.identity.tags : ['Original'],
+          tags: Array.isArray(parsed.identity?.tags)
+            ? Array.from(new Set([...parsed.identity.tags, inferredGenre, inferredTone]))
+            : ['Original', inferredGenre, inferredTone],
           avatarUrl: '',
         },
         appearance: {
@@ -182,7 +241,7 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
           currentOccupation: parsed.background?.currentOccupation || '',
           motivations: parsed.background?.motivations || '',
           secrets: parsed.background?.secrets || '',
-          dynamicWithUser: parsed.background?.dynamicWithUser || dynamic,
+          dynamicWithUser: parsed.background?.dynamicWithUser || inferredDynamic,
         },
         scenario: {
           environmentAndContext: parsed.scenario?.environmentAndContext || '',
@@ -215,7 +274,7 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
           pastTenseNarration: true,
           customSystemPrompt: '',
           postHistoryInstructions: '',
-          creatorNotes: `Generated from idea: "${baseIdea}"`,
+          creatorNotes: `Generated from idea: "${baseIdea}" | Setting: ${inferredGenre} | Tone: ${inferredTone}`,
         },
       };
 
@@ -246,7 +305,7 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Provide a premise, and AI will generate all sections, wardrobe, and lorebook
+                Just provide your base idea — AI automatically derives the setting, tone, wardrobe, and lorebook
               </p>
             </div>
           </div>
@@ -289,60 +348,151 @@ export const IdeaWizardModal: React.FC<IdeaWizardModalProps> = ({ isOpen, onClos
 
           {/* Base Concept Input */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Your Character Concept / Base Idea
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                Your Character Concept / Base Idea *
+              </label>
+              {baseIdea.trim() && (
+                <button
+                  type="button"
+                  onClick={handleAutoDetectContext}
+                  disabled={isDetectingContext || isGenerating}
+                  className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors disabled:opacity-40"
+                >
+                  {isDetectingContext ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Wand2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isDetectingContext ? 'Deducing...' : 'Auto-Detect Context'}</span>
+                </button>
+              )}
+            </div>
             <textarea
               rows={4}
               value={baseIdea}
               onChange={e => setBaseIdea(e.target.value)}
               disabled={isGenerating}
-              placeholder="e.g. A weary dwarven runesmith who communicates with mountain spirits, carrying a glowing hammer inscribed with oaths to forgotten ancestors..."
+              placeholder="e.g. A cynical airship captain with a mechanical eye who smuggles forbidden aether crystals across floating sky archipelagos, secretly searching for his lost crew..."
               className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
-          {/* Quick Filters: Genre, Tone, Relationship */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Setting / Genre
-              </label>
-              <input
-                type="text"
-                value={genre}
-                onChange={e => setGenre(e.target.value)}
-                disabled={isGenerating}
-                placeholder="Fantasy, Cyberpunk, etc."
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
-              />
+          {/* AI Auto-Generated Context Preview Card */}
+          <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  AI Context Generation
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium">
+                  Auto-Inferred
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowManualOverride(!showManualOverride)}
+                className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                <span>{showManualOverride ? 'Hide Options' : 'Edit Manually (Optional)'}</span>
+                {showManualOverride ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Tone / Atmosphere
-              </label>
-              <input
-                type="text"
-                value={tone}
-                onChange={e => setTone(e.target.value)}
-                disabled={isGenerating}
-                placeholder="Dark, Melodramatic, etc."
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
-              />
+
+            {/* Inferred Context Badges */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+              {/* Setting / Genre */}
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <Globe className="w-3 h-3 text-indigo-400" />
+                  <span>Setting & Genre</span>
+                </div>
+                <div className="text-xs font-semibold text-slate-200 mt-1 truncate">
+                  {genre || (
+                    <span className="text-slate-500 italic font-normal">
+                      Auto-detected by AI
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Tone / Mood */}
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <Smile className="w-3 h-3 text-purple-400" />
+                  <span>Tone & Mood</span>
+                </div>
+                <div className="text-xs font-semibold text-slate-200 mt-1 truncate">
+                  {tone || (
+                    <span className="text-slate-500 italic font-normal">
+                      Auto-detected by AI
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Dynamic with {{user}} */}
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <Users className="w-3 h-3 text-cyan-400" />
+                  <span>Dynamic with {'{{user}}'}</span>
+                </div>
+                <div className="text-xs font-semibold text-slate-200 mt-1 truncate">
+                  {dynamic || (
+                    <span className="text-slate-500 italic font-normal">
+                      Auto-detected by AI
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Dynamic with {'{{user}}'}
-              </label>
-              <input
-                type="text"
-                value={dynamic}
-                onChange={e => setDynamic(e.target.value)}
-                disabled={isGenerating}
-                placeholder="Rivals, Allies, Strangers"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
+
+            {/* Optional Manual Override Inputs (Only shown if toggled) */}
+            {showManualOverride && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800/80 animate-in fade-in">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Override Setting / Genre
+                  </label>
+                  <input
+                    type="text"
+                    value={genre}
+                    onChange={e => setGenre(e.target.value)}
+                    disabled={isGenerating}
+                    placeholder="e.g. Steampunk Fantasy"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Override Tone / Mood
+                  </label>
+                  <input
+                    type="text"
+                    value={tone}
+                    onChange={e => setTone(e.target.value)}
+                    disabled={isGenerating}
+                    placeholder="e.g. Gritty & Wry"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    Override Dynamic with {'{{user}}'}
+                  </label>
+                  <input
+                    type="text"
+                    value={dynamic}
+                    onChange={e => setDynamic(e.target.value)}
+                    disabled={isGenerating}
+                    placeholder="e.g. Reluctant Allies"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Generation Progress Display */}
